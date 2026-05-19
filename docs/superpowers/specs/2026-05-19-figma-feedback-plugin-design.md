@@ -70,6 +70,7 @@ figma-feedback-plugin/
 ├── .claude-plugin/
 │   ├── plugin.json
 │   ├── commands/
+│   │   ├── figma-feedback-help.md
 │   │   ├── figma-feedback-init.md
 │   │   ├── figma-feedback-capture.md
 │   │   ├── figma-feedback-push.md
@@ -113,9 +114,17 @@ In the user's app repo, only two artifacts are owned by this workflow:
         └── addressed.md          # What user actually implemented
 ```
 
-## Slash command flow (one full round)
+## Slash command flow
 
-Every command (except `/figma-feedback-capture`, which is local-only) starts with a **MCP preflight** in the skill: Claude verifies the Figma MCP server is connected by listing available MCP tools. If the `use_figma` tool (or equivalent write tool) is missing, the skill instructs Claude to abort with a setup message pointing at the Figma MCP install docs. No silent degradation.
+### Discovery
+
+`/figma-feedback-help` — Lists every plugin command with a one-line description and points at the README for setup. **Local-only, no MCP, no auth required.** Output is plain markdown rendered in the Claude Code session. This is the entry point for a new user who just installed the plugin and has no idea where to start.
+
+The command's output mirrors the per-round table below, plus a short "First time? Run `/figma-feedback-init`" preamble.
+
+### Per-round flow
+
+Every command in the round flow (except `/figma-feedback-capture`, which is local-only) starts with a **MCP preflight** in the skill: Claude verifies the Figma MCP server is connected by listing available MCP tools. If the `use_figma` tool (or equivalent write tool) is missing, the skill instructs Claude to abort with a setup message pointing at the Figma MCP install docs. No silent degradation.
 
 | # | Command | Purpose |
 |---|---|---|
