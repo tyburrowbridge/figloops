@@ -71,6 +71,58 @@ describe('uploadImage', () => {
       }),
     ).rejects.toThrowError(/403.*Forbidden/);
   });
+
+  it('retries on 5xx and succeeds if a later attempt works', async () => {
+    let calls = 0;
+    (fetch as any).mockImplementation(() => {
+      calls++;
+      if (calls < 3) {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+          text: async () => 'Service Unavailable',
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ meta: { images: { 'login.png': 'hash-retry' } } }),
+      });
+    });
+
+    const hash = await uploadImage({
+      fileKey: 'abc123',
+      token: 'tok',
+      filename: 'login.png',
+      bytes: Buffer.from([0x89]),
+    });
+
+    expect(hash).toBe('hash-retry');
+    expect(calls).toBe(3);
+  }, 10_000);
+
+  it('does NOT retry on 4xx (other than 429)', async () => {
+    let calls = 0;
+    (fetch as any).mockImplementation(() => {
+      calls++;
+      return Promise.resolve({
+        ok: false,
+        status: 403,
+        text: async () => 'Forbidden',
+      });
+    });
+
+    await expect(
+      uploadImage({
+        fileKey: 'abc123',
+        token: 'bad',
+        filename: 'x.png',
+        bytes: Buffer.from([0]),
+      }),
+    ).rejects.toThrowError(/403.*Forbidden/);
+
+    expect(calls).toBe(1);
+  });
 });
 
 describe('fetchComments', () => {
