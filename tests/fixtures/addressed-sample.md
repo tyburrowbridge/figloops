@@ -1,0 +1,2 @@
+- Added breadcrumbs to Dashboard. Drove from: #12, #17
+- Increased contrast on disabled buttons. Drove from: #31

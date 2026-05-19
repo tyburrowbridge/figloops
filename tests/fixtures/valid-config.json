@@ -1,0 +1,9 @@
+{
+  "devServer": { "url": "http://localhost:3000", "waitFor": "networkidle" },
+  "viewport":  { "width": 1440, "height": 900 },
+  "figma":     { "fileKey": "abc123", "changelogPageName": "Changelog" },
+  "routes": [
+    { "label": "Login",     "path": "/login" },
+    { "label": "Dashboard", "path": "/dashboard", "waitFor": "[data-loaded]" }
+  ]
+}

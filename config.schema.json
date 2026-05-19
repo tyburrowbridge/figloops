@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "figma-feedback.config.json",
+  "type": "object",
+  "required": ["devServer", "viewport", "figma", "routes"],
+  "properties": {
+    "devServer": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Base URL of the running dev server (e.g., http://localhost:3000)."
+        },
+        "waitFor": {
+          "description": "Playwright wait condition used after page.goto(). One of: networkidle, load, domcontentloaded.",
+          "oneOf": [
+            { "const": "networkidle" },
+            { "const": "load" },
+            { "const": "domcontentloaded" }
+          ]
+        }
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width":  { "type": "integer", "minimum": 200 },
+        "height": { "type": "integer", "minimum": 200 }
+      }
+    },
+    "figma": {
+      "type": "object",
+      "required": ["fileKey", "changelogPageName"],
+      "properties": {
+        "fileKey": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Figma file key — the path segment after /file/ in your Figma file URL."
+        },
+        "changelogPageName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the Figma page where per-round changelog entries will be written."
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["label", "path"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable name shown in the Figma frame title (e.g., 'Login', 'Dashboard')."
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^/",
+            "description": "Path appended to devServer.url for this route. Must start with /."
+          },
+          "waitFor": {
+            "type": "string",
+            "description": "Optional CSS selector to wait for before capturing this route. Used as page.waitForSelector(<this string>). For wait conditions, use devServer.waitFor."
+          }
+        }
+      }
+    }
+  }
+}
