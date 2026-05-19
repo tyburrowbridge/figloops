@@ -26,16 +26,17 @@ Plugin repo files this plan will create:
 figma-feedback-plugin/
 ├── .claude-plugin/
 │   ├── plugin.json
-│   ├── commands/
-│   │   ├── figma-feedback-help.md
-│   │   ├── figma-feedback-init.md
-│   │   ├── figma-feedback-capture.md
-│   │   ├── figma-feedback-push.md
-│   │   ├── figma-feedback-pull.md
-│   │   ├── figma-feedback-plan.md
-│   │   └── figma-feedback-close-round.md
-│   └── skills/
-│       └── figma-feedback/SKILL.md
+│   └── marketplace.json
+├── commands/
+│   ├── help.md
+│   ├── init.md
+│   ├── capture.md
+│   ├── push.md
+│   ├── pull.md
+│   ├── plan.md
+│   └── close-round.md
+├── skills/
+│   └── figma-feedback/SKILL.md
 ├── src/
 │   ├── config.ts
 │   ├── round-state.ts
@@ -68,7 +69,8 @@ figma-feedback-plugin/
 **Boundaries:**
 - `src/` = pure modules with isolated responsibilities, testable in isolation
 - `scripts/` = executable entry points that compose `src/` modules and emit stdout JSON
-- `.claude-plugin/` = user-facing plugin surface (commands, skill, manifest)
+- `.claude-plugin/` = plugin manifest (`plugin.json`) and marketplace manifest (`marketplace.json`)
+- `commands/` and `skills/` = user-facing plugin surface (slash commands, orchestration skill)
 - `tests/` = vitest tests + fixtures
 
 The skill is the only place that touches both TS and MCP. TS scripts never call MCP. MCP calls are described in `SKILL.md` and made by Claude when executing the skill.
@@ -209,7 +211,7 @@ FIGMA_TOKEN=figd_REPLACE_ME
 # Absolute path to where the figma-feedback-plugin is installed (e.g.,
 # ~/.claude/plugins/figma-feedback-plugin). The plugin's skill uses this
 # to locate its TS helper scripts when running from the consuming repo.
-# /figma-feedback-init will help you fill this in.
+# /figma-feedback-plugin:init will help you fill this in.
 FIGMA_FEEDBACK_PLUGIN_DIR=/absolute/path/to/figma-feedback-plugin
 ```
 
@@ -594,7 +596,7 @@ export interface RoundState {
 
 export function readRoundState(path: string): RoundState {
   if (!existsSync(path)) {
-    throw new Error(`Round state file not found at ${path}. Run /figma-feedback-init first.`);
+    throw new Error(`Round state file not found at ${path}. Run /figma-feedback-plugin:init first.`);
   }
   return JSON.parse(readFileSync(path, 'utf8')) as RoundState;
 }
@@ -1250,7 +1252,7 @@ export function formatChangelog(args: FormatChangelogArgs): string {
   return parts.join('\n').trimEnd() + '\n';
 }
 
-// CLI entry point: called by /figma-feedback-close-round.
+// CLI entry point: called by /figma-feedback-plugin:close-round.
 // Usage: tsx scripts/format-changelog.ts <fromRound> <toRound> <date> <planPath> <addressedPath>
 async function main() {
   const [fromRound, toRound, date, planPath, addressedPath] = process.argv.slice(2);
@@ -1439,7 +1441,7 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
   }
 }
 
-// CLI entry point: invoked by /figma-feedback-capture
+// CLI entry point: invoked by /figma-feedback-plugin:capture
 async function main() {
   const cwd = process.cwd();
   const config = loadConfig(join(cwd, 'figma-feedback.config.json'));
@@ -1530,7 +1532,7 @@ async function main() {
   const capturesDir = join(cwd, 'feedback', `round-${state.currentRound}`, 'captures');
 
   if (!existsSync(capturesDir)) {
-    process.stderr.write(`No captures directory at ${capturesDir}. Run /figma-feedback-capture first.\n`);
+    process.stderr.write(`No captures directory at ${capturesDir}. Run /figma-feedback-plugin:capture first.\n`);
     process.exit(1);
   }
 
@@ -1617,7 +1619,7 @@ async function main() {
 
   if (!existsSync(manifestPath)) {
     process.stderr.write(
-      `No push-manifest.json at ${manifestPath}. Run /figma-feedback-push first.\n`,
+      `No push-manifest.json at ${manifestPath}. Run /figma-feedback-plugin:push first.\n`,
     );
     process.exit(1);
   }
@@ -1676,13 +1678,13 @@ git commit -m "feat: add pull-comments orchestrator script"
 
 **Files:**
 - Create: `.claude-plugin/plugin.json`
-- Create: `commands/figma-feedback-help.md`
-- Create: `commands/figma-feedback-init.md`
-- Create: `commands/figma-feedback-capture.md`
-- Create: `commands/figma-feedback-push.md`
-- Create: `commands/figma-feedback-pull.md`
-- Create: `commands/figma-feedback-plan.md`
-- Create: `commands/figma-feedback-close-round.md`
+- Create: `commands/figma-feedback-plugin:help.md`
+- Create: `commands/figma-feedback-plugin:init.md`
+- Create: `commands/figma-feedback-plugin:capture.md`
+- Create: `commands/figma-feedback-plugin:push.md`
+- Create: `commands/figma-feedback-plugin:pull.md`
+- Create: `commands/figma-feedback-plugin:plan.md`
+- Create: `commands/figma-feedback-plugin:close-round.md`
 
 Each command file is a short markdown doc with frontmatter. Its body tells Claude to invoke the skill at `skills/figma-feedback/SKILL.md` (created in Task 14) with the specific phase argument.
 
@@ -1696,7 +1698,7 @@ Each command file is a short markdown doc with frontmatter. Its body tells Claud
 }
 ```
 
-- [ ] **Step 2: Create `commands/figma-feedback-help.md`**
+- [ ] **Step 2: Create `commands/figma-feedback-plugin:help.md`**
 
 ```markdown
 ---
@@ -1707,24 +1709,24 @@ Print the following to the user as the entire response. Do not call any tools. D
 
 # figma-feedback-plugin commands
 
-**First time?** Run `/figma-feedback-init` in the repo where your dev server runs.
+**First time?** Run `/figma-feedback-plugin:init` in the repo where your dev server runs.
 
 | Command | What it does |
 |---|---|
-| `/figma-feedback-help` | This list. |
-| `/figma-feedback-init` | One-time setup. Verifies the Figma MCP is connected, writes `figma-feedback.config.json` and `.env.example`, initializes the round counter. |
-| `/figma-feedback-capture [routes…]` | Runs Playwright over the configured routes (or just the ones you name) and saves PNGs into `feedback/round-N/captures/`. Then asks you to approve before pushing. |
-| `/figma-feedback-push` | Uploads captured PNGs to Figma and asks the Figma MCP to create a `Round N` page with one frame per capture in a 3-column grid. Writes `push-manifest.json`. |
-| `/figma-feedback-pull` | Pulls stakeholder comments from Figma for the current round's frames; writes `comments.json`. |
-| `/figma-feedback-plan` | Clusters comments by inferred theme; writes `themes.md` and `plan.md` for you to review/edit. |
-| `/figma-feedback-close-round` | Reads your `plan.md` + `addressed.md`, writes a per-round summary to the Figma `Changelog` page, and bumps the round counter. |
+| `/figma-feedback-plugin:help` | This list. |
+| `/figma-feedback-plugin:init` | One-time setup. Verifies the Figma MCP is connected, writes `figma-feedback.config.json` and `.env.example`, initializes the round counter. |
+| `/figma-feedback-plugin:capture [routes…]` | Runs Playwright over the configured routes (or just the ones you name) and saves PNGs into `feedback/round-N/captures/`. Then asks you to approve before pushing. |
+| `/figma-feedback-plugin:push` | Uploads captured PNGs to Figma and asks the Figma MCP to create a `Round N` page with one frame per capture in a 3-column grid. Writes `push-manifest.json`. |
+| `/figma-feedback-plugin:pull` | Pulls stakeholder comments from Figma for the current round's frames; writes `comments.json`. |
+| `/figma-feedback-plugin:plan` | Clusters comments by inferred theme; writes `themes.md` and `plan.md` for you to review/edit. |
+| `/figma-feedback-plugin:close-round` | Reads your `plan.md` + `addressed.md`, writes a per-round summary to the Figma `Changelog` page, and bumps the round counter. |
 
 Workflow: `init` → `capture` → `push` → *(stakeholders comment)* → `pull` → `plan` → *(you implement changes)* → `close-round` → loop back to `capture`.
 
 See the README at the plugin install location for setup details (Figma MCP install, Figma Personal Access Token, JSON Schema editor support).
 ```
 
-- [ ] **Step 3: Create `commands/figma-feedback-init.md`**
+- [ ] **Step 3: Create `commands/figma-feedback-plugin:init.md`**
 
 ```markdown
 ---
@@ -1734,7 +1736,7 @@ description: Set up figma-feedback in the current repo (config, env, round state
 Invoke the skill `figma-feedback` with phase `init`.
 ```
 
-- [ ] **Step 4: Create `commands/figma-feedback-capture.md`**
+- [ ] **Step 4: Create `commands/figma-feedback-plugin:capture.md`**
 
 ```markdown
 ---
@@ -1744,7 +1746,7 @@ description: Capture screenshots of configured routes and preview the Figma layo
 Invoke the skill `figma-feedback` with phase `capture`. Pass through any arguments the user provided (which may be a subset of route labels to capture).
 ```
 
-- [ ] **Step 5: Create `commands/figma-feedback-push.md`**
+- [ ] **Step 5: Create `commands/figma-feedback-plugin:push.md`**
 
 ```markdown
 ---
@@ -1754,7 +1756,7 @@ description: Upload captured PNGs to Figma and create the Round N page+frames vi
 Invoke the skill `figma-feedback` with phase `push`.
 ```
 
-- [ ] **Step 6: Create `commands/figma-feedback-pull.md`**
+- [ ] **Step 6: Create `commands/figma-feedback-plugin:pull.md`**
 
 ```markdown
 ---
@@ -1764,7 +1766,7 @@ description: Pull stakeholder comments from Figma for the current round
 Invoke the skill `figma-feedback` with phase `pull`.
 ```
 
-- [ ] **Step 7: Create `commands/figma-feedback-plan.md`**
+- [ ] **Step 7: Create `commands/figma-feedback-plugin:plan.md`**
 
 ```markdown
 ---
@@ -1774,7 +1776,7 @@ description: Cluster Figma comments by theme and write a proposed change plan
 Invoke the skill `figma-feedback` with phase `plan`.
 ```
 
-- [ ] **Step 8: Create `commands/figma-feedback-close-round.md`**
+- [ ] **Step 8: Create `commands/figma-feedback-plugin:close-round.md`**
 
 ```markdown
 ---
@@ -1856,7 +1858,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
    ```
 8. Copy `<PLUGIN_DIR>/.env.example` to the consuming repo's `.env` (do NOT overwrite if it already exists — instead, tell the user to manually add any missing keys). Fill in `FIGMA_FEEDBACK_PLUGIN_DIR=<PLUGIN_DIR>` automatically. Tell the user to fill in `FIGMA_TOKEN` (link: https://www.figma.com/developers/api#access-tokens).
 9. Initialize round state by running: `<PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/init-state.ts` from the consuming repo's cwd. Expected stdout: `{ "initialized": ".../feedback/.round-state.json", "currentRound": 1 }`.
-10. Tell the user the next step is to fill in `.env`, then run `/figma-feedback-capture`.
+10. Tell the user the next step is to fill in `.env`, then run `/figma-feedback-plugin:capture`.
 
 ## Phase: `capture`
 
@@ -1873,7 +1875,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
      3 columns wide, rows added as needed.
    Approve push? (yes / re-capture / cancel)
    ```
-4. If the user approves, instruct them to run `/figma-feedback-push`. Do not auto-run push.
+4. If the user approves, instruct them to run `/figma-feedback-plugin:push`. Do not auto-run push.
 5. If any captures failed, list them with their error messages so the user can fix and re-run.
 
 ## Phase: `push`
@@ -1906,13 +1908,13 @@ This preflight runs in `init` too — it's how we know the user has set up the M
 1. Run MCP preflight.
 2. Run `<PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/pull-comments.ts` from the consuming repo's cwd. Capture stdout JSON: `{ round, totalComments, forThisRound, wroteTo }`.
 3. Tell the user `forThisRound` comments were saved to `wroteTo`.
-4. If `forThisRound` is 0, tell the user no feedback exists yet for this round and suggest waiting before running `/figma-feedback-plan`.
+4. If `forThisRound` is 0, tell the user no feedback exists yet for this round and suggest waiting before running `/figma-feedback-plugin:plan`.
 
 ## Phase: `plan`
 
 1. Run MCP preflight.
 2. Read `feedback/round-<round>/comments.json` (resolve `<round>` from `feedback/.round-state.json`).
-3. If the file does not exist, tell the user to run `/figma-feedback-pull` first.
+3. If the file does not exist, tell the user to run `/figma-feedback-plugin:pull` first.
 4. Cluster the comments by inferred semantic theme. Do not group by frame or by author — group by what the comment is *about* (e.g., "Navigation clarity", "Color contrast", "Onboarding flow"). One theme may span multiple frames.
 5. Write `feedback/round-<round>/themes.md` with one section per theme:
    ```markdown
@@ -1957,7 +1959,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
    ```bash
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/round-state.js').then(m => { const n = m.bumpRound('feedback/.round-state.json'); console.log('currentRound now', n); })"
    ```
-10. Tell the user the round summary was written to the `Changelog` page and that the next `/figma-feedback-capture` will start Round `<round + 1>`.
+10. Tell the user the round summary was written to the `Changelog` page and that the next `/figma-feedback-plugin:capture` will start Round `<round + 1>`.
 
 ## Error handling principles
 
@@ -2011,10 +2013,10 @@ A Claude Code plugin that captures localhost web prototypes, pushes them to Figm
 In the repository where your dev server runs:
 
 1. Make sure the Figma MCP is connected to your Claude Code session.
-2. Run `/figma-feedback-init`.
+2. Run `/figma-feedback-plugin:init`.
 3. The init prompts will confirm the plugin's install path and ask for your Figma file URL, dev server URL, changelog page name, and an initial list of routes.
 4. The init writes `.env` (or asks you to copy `.env.example`) with `FIGMA_TOKEN` and `FIGMA_FEEDBACK_PLUGIN_DIR`. Fill in `FIGMA_TOKEN` from https://www.figma.com/developers/api#access-tokens.
-5. Verify by running `/figma-feedback-help` — it should list all commands.
+5. Verify by running `/figma-feedback-plugin:help` — it should list all commands.
 
 ### Why FIGMA_FEEDBACK_PLUGIN_DIR?
 
@@ -2024,13 +2026,13 @@ This plugin's TS helper scripts live in the plugin's install directory (e.g., `~
 
 | Step | Command | What you do |
 |---|---|---|
-| 1 | `/figma-feedback-capture` | Start your dev server, then run the command. Approve the preview when shown. |
-| 2 | `/figma-feedback-push` | Pushes captures to Figma. Share the file URL with stakeholders. |
+| 1 | `/figma-feedback-plugin:capture` | Start your dev server, then run the command. Approve the preview when shown. |
+| 2 | `/figma-feedback-plugin:push` | Pushes captures to Figma. Share the file URL with stakeholders. |
 | 3 | *(wait)* | Stakeholders leave comments on Figma frames. |
-| 4 | `/figma-feedback-pull` | Pulls those comments locally. |
-| 5 | `/figma-feedback-plan` | Generates `themes.md` and `plan.md`. Review and edit `plan.md`. |
+| 4 | `/figma-feedback-plugin:pull` | Pulls those comments locally. |
+| 5 | `/figma-feedback-plugin:plan` | Generates `themes.md` and `plan.md`. Review and edit `plan.md`. |
 | 6 | *(implement)* | Use your normal Claude Code coding session. Track each addressed item in `feedback/round-N/addressed.md`. |
-| 7 | `/figma-feedback-close-round` | Writes the per-round summary to Figma's Changelog page and bumps the round counter. |
+| 7 | `/figma-feedback-plugin:close-round` | Writes the per-round summary to Figma's Changelog page and bumps the round counter. |
 | 8 | Back to step 1 for Round N+1 | |
 
 ## Files this plugin manages in your repo
@@ -2065,14 +2067,14 @@ This plugin's CI cannot verify the Figma MCP integration end-to-end. Before tagg
 
 1. Create a fresh Figma file you don't care about. Note the file URL.
 2. In a temporary directory, create a minimal dev server (e.g., `npx http-server` serving two HTML pages at `/login` and `/dashboard`).
-3. Run `/figma-feedback-init` and provide the throwaway file URL.
-4. Run `/figma-feedback-capture` — verify both PNGs appear in `feedback/round-1/captures/`.
-5. Run `/figma-feedback-push` — verify the Figma file now has a `Round 1` page with 2 frames, each filled with the captured image.
+3. Run `/figma-feedback-plugin:init` and provide the throwaway file URL.
+4. Run `/figma-feedback-plugin:capture` — verify both PNGs appear in `feedback/round-1/captures/`.
+5. Run `/figma-feedback-plugin:push` — verify the Figma file now has a `Round 1` page with 2 frames, each filled with the captured image.
 6. Add 2 comments in Figma on those frames.
-7. Run `/figma-feedback-pull` — verify `feedback/round-1/comments.json` contains both comments.
-8. Run `/figma-feedback-plan` — verify `themes.md` and `plan.md` are reasonable.
+7. Run `/figma-feedback-plugin:pull` — verify `feedback/round-1/comments.json` contains both comments.
+8. Run `/figma-feedback-plugin:plan` — verify `themes.md` and `plan.md` are reasonable.
 9. Edit `plan.md` to mark one item checked. Create `feedback/round-1/addressed.md` with a single bullet.
-10. Run `/figma-feedback-close-round` — verify the Figma file has a `Changelog` page with a `Round 1 → Round 2` frame.
+10. Run `/figma-feedback-plugin:close-round` — verify the Figma file has a `Changelog` page with a `Round 1 → Round 2` frame.
 11. Verify `feedback/.round-state.json` shows `currentRound: 2`.
 
 If any step fails, the corresponding phase in `skills/figma-feedback/SKILL.md` is the place to look.
@@ -2113,11 +2115,11 @@ This task is a real end-to-end run, not code. Treat it as the v1 acceptance test
 
 - [ ] **Step 1: Verify the plugin loads in Claude Code**
 
-Install the plugin per your Claude Code plugin distribution mechanism. In a new Claude Code session, run `/figma-feedback-help`. Expected: command list is printed.
+Install the plugin per your Claude Code plugin distribution mechanism. In a new Claude Code session, run `/figma-feedback-plugin:help`. Expected: command list is printed.
 
 - [ ] **Step 2: Verify Figma MCP preflight rejects when missing**
 
-Disconnect the Figma MCP from your Claude Code session. Run `/figma-feedback-init`. Expected: skill aborts with a setup message pointing at the Figma MCP install docs.
+Disconnect the Figma MCP from your Claude Code session. Run `/figma-feedback-plugin:init`. Expected: skill aborts with a setup message pointing at the Figma MCP install docs.
 
 - [ ] **Step 3: Reconnect Figma MCP. Run full round.**
 
@@ -2125,9 +2127,9 @@ Follow the manual smoke test procedure in the README (all 11 steps). If any step
 
 - [ ] **Step 4: Verify second round works**
 
-After the first `/figma-feedback-close-round` succeeds, run `/figma-feedback-capture` again. Verify:
+After the first `/figma-feedback-plugin:close-round` succeeds, run `/figma-feedback-plugin:capture` again. Verify:
 - The new captures land in `feedback/round-2/captures/`
-- `/figma-feedback-push` creates a `Round 2` page (separate from `Round 1`)
+- `/figma-feedback-plugin:push` creates a `Round 2` page (separate from `Round 1`)
 
 - [ ] **Step 5: Tag v0.1.0 if all of the above passed**
 

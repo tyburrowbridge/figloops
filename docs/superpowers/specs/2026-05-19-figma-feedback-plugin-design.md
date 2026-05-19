@@ -69,16 +69,17 @@ The skill is the only place that mixes TS and MCP — TS scripts never call MCP 
 figma-feedback-plugin/
 ├── .claude-plugin/
 │   ├── plugin.json
-│   ├── commands/
-│   │   ├── figma-feedback-help.md
-│   │   ├── figma-feedback-init.md
-│   │   ├── figma-feedback-capture.md
-│   │   ├── figma-feedback-push.md
-│   │   ├── figma-feedback-pull.md
-│   │   ├── figma-feedback-plan.md
-│   │   └── figma-feedback-close-round.md
-│   └── skills/
-│       └── figma-feedback/SKILL.md
+│   └── marketplace.json
+├── commands/
+│   ├── help.md
+│   ├── init.md
+│   ├── capture.md
+│   ├── push.md
+│   ├── pull.md
+│   ├── plan.md
+│   └── close-round.md
+├── skills/
+│   └── figma-feedback/SKILL.md
 ├── scripts/
 │   ├── capture.ts            # Playwright capture
 │   ├── upload-images.ts      # Upload PNGs via Figma REST, return image hashes
@@ -118,24 +119,24 @@ In the user's app repo, only two artifacts are owned by this workflow:
 
 ### Discovery
 
-`/figma-feedback-help` — Lists every plugin command with a one-line description and points at the README for setup. **Local-only, no MCP, no auth required.** Output is plain markdown rendered in the Claude Code session. This is the entry point for a new user who just installed the plugin and has no idea where to start.
+`/figma-feedback-plugin:help` — Lists every plugin command with a one-line description and points at the README for setup. **Local-only, no MCP, no auth required.** Output is plain markdown rendered in the Claude Code session. This is the entry point for a new user who just installed the plugin and has no idea where to start.
 
-The command's output mirrors the per-round table below, plus a short "First time? Run `/figma-feedback-init`" preamble.
+The command's output mirrors the per-round table below, plus a short "First time? Run `/figma-feedback-plugin:init`" preamble.
 
 ### Per-round flow
 
-Every command in the round flow (except `/figma-feedback-capture`, which is local-only) starts with a **MCP preflight** in the skill: Claude verifies the Figma MCP server is connected by listing available MCP tools. If the `use_figma` tool (or equivalent write tool) is missing, the skill instructs Claude to abort with a setup message pointing at the Figma MCP install docs. No silent degradation.
+Every command in the round flow (except `/figma-feedback-plugin:capture`, which is local-only) starts with a **MCP preflight** in the skill: Claude verifies the Figma MCP server is connected by listing available MCP tools. If the `use_figma` tool (or equivalent write tool) is missing, the skill instructs Claude to abort with a setup message pointing at the Figma MCP install docs. No silent degradation.
 
 | # | Command | Purpose |
 |---|---|---|
-| 1 | `/figma-feedback-init` | One-time. Verifies MCP is connected, then writes `figma-feedback.config.json` and `.env.example`, prompts for Figma file URL and dev server URL, initializes `feedback/.round-state.json`. |
-| 2 | `/figma-feedback-capture [routes…]` | Runs Playwright over config routes (or supplied subset). Saves PNGs to `feedback/round-N/captures/`. Skill shows the captured list + proposed Figma layout and asks for approval. |
-| 3 | `/figma-feedback-push` | Uploads PNG bytes via REST, then Claude calls MCP to create the `Round N` page if missing, create one frame per capture in a 3-column grid, set each frame's image fill to the uploaded hash. Skill writes `push-manifest.json`. |
+| 1 | `/figma-feedback-plugin:init` | One-time. Verifies MCP is connected, then writes `figma-feedback.config.json` and `.env.example`, prompts for Figma file URL and dev server URL, initializes `feedback/.round-state.json`. |
+| 2 | `/figma-feedback-plugin:capture [routes…]` | Runs Playwright over config routes (or supplied subset). Saves PNGs to `feedback/round-N/captures/`. Skill shows the captured list + proposed Figma layout and asks for approval. |
+| 3 | `/figma-feedback-plugin:push` | Uploads PNG bytes via REST, then Claude calls MCP to create the `Round N` page if missing, create one frame per capture in a 3-column grid, set each frame's image fill to the uploaded hash. Skill writes `push-manifest.json`. |
 | 4 | *(stakeholders comment in Figma)* | — |
-| 5 | `/figma-feedback-pull` | Pulls comments anchored to Round N's frames (via REST), saves `comments.json`. |
-| 6 | `/figma-feedback-plan` | Claude clusters by theme, writes `themes.md` and `plan.md`. User reviews/edits `plan.md`. |
+| 5 | `/figma-feedback-plugin:pull` | Pulls comments anchored to Round N's frames (via REST), saves `comments.json`. |
+| 6 | `/figma-feedback-plugin:plan` | Claude clusters by theme, writes `themes.md` and `plan.md`. User reviews/edits `plan.md`. |
 | 7 | *(user implements in normal Claude Code coding session; updates `addressed.md`)* | — |
-| 8 | `/figma-feedback-close-round` | Reads `plan.md` + `addressed.md`, formats round summary markdown, Claude calls MCP to create the `Changelog` page if missing and add a new text frame with the summary. Bumps round counter. |
+| 8 | `/figma-feedback-plugin:close-round` | Reads `plan.md` + `addressed.md`, formats round summary markdown, Claude calls MCP to create the `Changelog` page if missing and add a new text frame with the summary. Bumps round counter. |
 
 ## Phase 1 data flow — capture → preview → push
 
@@ -143,7 +144,7 @@ Every command in the round flow (except `/figma-feedback-capture`, which is loca
 figma-feedback.config.json
         │
         ▼
-  /figma-feedback-capture
+  /figma-feedback-plugin:capture
         │
         ├── Playwright launches headless Chromium
         ├── For each route: goto → wait (networkidle or selector) → screenshot
@@ -159,7 +160,7 @@ figma-feedback.config.json
      Approve push? (yes / edit list / re-capture)"
         │ (user approval)
         ▼
-  /figma-feedback-push
+  /figma-feedback-plugin:push
         │
         ├── Skill MCP preflight (abort if Figma MCP not connected)
         ├── TS: scripts/upload-images.ts
@@ -185,14 +186,14 @@ figma-feedback.config.json
   (stakeholders leave comments in Figma)
         │
         ▼
-  /figma-feedback-pull
+  /figma-feedback-plugin:pull
         │
         ├── GET /v1/files/<key>/comments
         ├── Filter to comments anchored to Round N's frames (via push-manifest node IDs)
         ├── Save feedback/round-N/comments.json
         │   [{id, frame_label, author, message, created_at, resolved}, …]
         ▼
-  /figma-feedback-plan
+  /figma-feedback-plugin:plan
         │
         ├── Claude reads comments.json
         ├── Clusters by inferred semantic theme
@@ -214,7 +215,7 @@ figma-feedback.config.json
    "- Added breadcrumbs to Dashboard. Drove from: #12, #17")
         │
         ▼
-  /figma-feedback-close-round
+  /figma-feedback-plugin:close-round
         │
         ├── Skill MCP preflight (abort if Figma MCP not connected)
         ├── TS: scripts/format-changelog.ts
@@ -231,7 +232,7 @@ figma-feedback.config.json
         │     - positioned below any existing changelog frames (vertical stack)
         ├── TS: bump feedback/.round-state.json currentRound → N+1
         ▼
-   Next /figma-feedback-capture starts Round N+1.
+   Next /figma-feedback-plugin:capture starts Round N+1.
 ```
 
 ## Configuration
@@ -257,7 +258,7 @@ figma-feedback.config.json
 ```
 
 - Validated with **zod** on load; missing/wrong-shape fields produce an error citing the exact field path.
-- `fileKey` is extracted from the user's Figma file URL during `/figma-feedback-init`.
+- `fileKey` is extracted from the user's Figma file URL during `/figma-feedback-plugin:init`.
 - The plugin ships `config.schema.json` for users who want editor JSON-Schema linting; they can add `"$schema": "<absolute path or URL>"` themselves. Not added by default because the plugin install path isn't predictable from the consuming repo.
 
 ### Secrets — `.env` (consuming repo, gitignored)
@@ -266,14 +267,14 @@ figma-feedback.config.json
 FIGMA_TOKEN=figd_xxxxx
 ```
 
-- `.env.example` is scaffolded by `/figma-feedback-init`.
+- `.env.example` is scaffolded by `/figma-feedback-plugin:init`.
 - The init command explains in chat how to generate a Figma Personal Access Token and links to Figma's docs.
 - Loaded via `dotenv` at script start; missing token fails loudly with a one-line error and a docs link.
 - **Only consumed by TS scripts** (REST image upload, REST comment fetch). The Figma MCP server has its own authentication, configured at the Claude Code MCP-setup level (not via `.env`). The init command's setup instructions cover both: `.env` for REST + linking the user to Figma MCP setup docs for MCP auth.
 
 ### Round state
 
-`feedback/.round-state.json` — `{ "currentRound": 2 }`. Created by `/figma-feedback-init` with `currentRound: 1`. Bumped only by `/figma-feedback-close-round`. Every other command reads it to know which `round-N/` directory to use.
+`feedback/.round-state.json` — `{ "currentRound": 2 }`. Created by `/figma-feedback-plugin:init` with `currentRound: 1`. Bumped only by `/figma-feedback-plugin:close-round`. Every other command reads it to know which `round-N/` directory to use.
 
 ## Error handling
 
@@ -313,7 +314,7 @@ Claude's MCP orchestration cannot be reliably mocked in TS. We rely on:
 
 ### MCP dependency
 
-v1 requires the official Figma MCP server (`figma/mcp-server-guide`, remote mode) to be installed and connected to the user's Claude Code session. If it is not connected, every command except `/figma-feedback-capture` will fail at the preflight step with a setup message — no silent degradation, no REST-only fallback path.
+v1 requires the official Figma MCP server (`figma/mcp-server-guide`, remote mode) to be installed and connected to the user's Claude Code session. If it is not connected, every command except `/figma-feedback-plugin:capture` will fail at the preflight step with a setup message — no silent degradation, no REST-only fallback path.
 
 This is a deliberate trade-off. Adding a REST-only fallback would mean maintaining two parallel push/changelog code paths and reintroducing the manual-seed friction we explicitly want to eliminate. The cost is hard coupling to the MCP being functional.
 
