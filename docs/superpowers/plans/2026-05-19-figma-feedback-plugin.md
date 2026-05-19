@@ -77,7 +77,7 @@ The skill is the only place that touches both TS and MCP. TS scripts never call 
 
 ## Conventions used by every task
 
-- **Working directory** for all commands: `/Users/tburrowbridge/GitHub/viasat/figma-feedback-plugin`
+- **Working directory** for all commands: `/Users/tburrowbridge/GitHub/figma-feedback-plugin`
 - **Test runner:** `npx vitest run <file>` for one file, `npx vitest run` for all
 - **TypeScript runner for scripts:** `npx tsx scripts/<name>.ts` (tsx is added in Task 1)
 - **Module system:** ESM (`"type": "module"` in package.json, `.ts` files use `import`/`export`)
