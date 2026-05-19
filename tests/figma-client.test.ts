@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { uploadImage, fetchComments } from '../src/figma-client.js';
+import { uploadImage, fetchComments, filterCommentsByFrameIds } from '../src/figma-client.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readFixture = (name: string) =>
@@ -126,5 +126,28 @@ describe('fetchComments', () => {
     await expect(
       fetchComments({ fileKey: 'abc123', token: 'bad' }),
     ).rejects.toThrowError(/401.*Unauthorized/);
+  });
+});
+
+describe('filterCommentsByFrameIds', () => {
+  const sample: any[] = [
+    { id: '1', nodeId: '1:42', message: 'a', author: 'A', createdAt: 't1', resolved: false },
+    { id: '2', nodeId: '1:43', message: 'b', author: 'B', createdAt: 't2', resolved: false },
+    { id: '3', nodeId: '9:99', message: 'c', author: 'C', createdAt: 't3', resolved: false },
+    { id: '4', nodeId: null,   message: 'd', author: 'D', createdAt: 't4', resolved: false },
+  ];
+
+  it('returns only comments whose nodeId is in the allow set', () => {
+    const out = filterCommentsByFrameIds(sample, new Set(['1:42', '1:43']));
+    expect(out.map((c) => c.id)).toEqual(['1', '2']);
+  });
+
+  it('returns empty array when no comments match', () => {
+    expect(filterCommentsByFrameIds(sample, new Set(['nope']))).toEqual([]);
+  });
+
+  it('excludes comments with null nodeId', () => {
+    const out = filterCommentsByFrameIds(sample, new Set(['1:42', '1:43', '9:99']));
+    expect(out.map((c) => c.id)).toEqual(['1', '2', '3']);
   });
 });

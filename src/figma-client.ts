@@ -84,3 +84,10 @@ export async function fetchComments(args: FetchCommentsArgs): Promise<FigmaComme
     resolved: c.resolved_at !== null,
   }));
 }
+
+export function filterCommentsByFrameIds(
+  comments: FigmaComment[],
+  allowed: Set<string>,
+): FigmaComment[] {
+  return comments.filter((c) => c.nodeId !== null && allowed.has(c.nodeId));
+}
