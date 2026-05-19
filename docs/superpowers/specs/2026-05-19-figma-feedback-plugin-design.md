@@ -42,8 +42,8 @@ The plugin handles capture, push, pull, clustering, and changelog writing. **It 
 
 Claude Code plugin combining:
 
-- **Slash commands** (in `.claude-plugin/commands/`) as the user-facing entry points
-- **A skill** (in `.claude-plugin/skills/figma-feedback/SKILL.md`) that Claude follows for the steps requiring judgment (capture preview, comment clustering, changelog formatting) **and to orchestrate Figma MCP calls** (page/frame creation, image fills, changelog text frames)
+- **Slash commands** (in `commands/`) as the user-facing entry points
+- **A skill** (in `skills/figma-feedback/SKILL.md`) that Claude follows for the steps requiring judgment (capture preview, comment clustering, changelog formatting) **and to orchestrate Figma MCP calls** (page/frame creation, image fills, changelog text frames)
 - **TypeScript helper scripts** (in `scripts/`) for everything that must be deterministic: Playwright capture, Figma REST calls (image uploads, comment reads), file I/O
 
 Single language across the plugin: **Node + TypeScript**.

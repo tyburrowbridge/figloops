@@ -1,5 +1,5 @@
 {
   "name": "figma-feedback-plugin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Capture localhost prototypes into Figma for stakeholder review; ingest comments and propose change plans."
 }

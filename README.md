@@ -8,7 +8,7 @@ A Claude Code plugin that captures localhost web prototypes, pushes them to Figm
 - Playwright Chromium (installed by `npm install` via `npx playwright install chromium`)
 - A Figma account with edit access to the file you'll be pushing into
 - **The official Figma MCP server connected to your Claude Code session** (`figma/mcp-server-guide`, remote mode). Setup: https://github.com/figma/mcp-server-guide
-  - Community alternative (free, less battle-tested): `southleft/figma-console-mcp` — not officially supported by this plugin but the skill can be adapted by changing the MCP tool names in `.claude-plugin/skills/figma-feedback/SKILL.md`.
+  - Community alternative (free, less battle-tested): `southleft/figma-console-mcp` — not officially supported by this plugin but the skill can be adapted by changing the MCP tool names in `skills/figma-feedback/SKILL.md`.
 - A Figma Personal Access Token (for REST image uploads + comment reads, separate from MCP auth): https://www.figma.com/developers/api#access-tokens
 
 ## Install the plugin
@@ -84,7 +84,7 @@ This plugin's CI cannot verify the Figma MCP integration end-to-end. Before tagg
 10. Run `/figma-feedback-plugin:close-round` — verify the Figma file has a `Changelog` page with a `Round 1 → Round 2` frame.
 11. Verify `feedback/.round-state.json` shows `currentRound: 2`.
 
-If any step fails, the corresponding phase in `.claude-plugin/skills/figma-feedback/SKILL.md` is the place to look.
+If any step fails, the corresponding phase in `skills/figma-feedback/SKILL.md` is the place to look.
 
 ## Limitations (v1)
 

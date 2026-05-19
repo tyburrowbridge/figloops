@@ -1676,15 +1676,15 @@ git commit -m "feat: add pull-comments orchestrator script"
 
 **Files:**
 - Create: `.claude-plugin/plugin.json`
-- Create: `.claude-plugin/commands/figma-feedback-help.md`
-- Create: `.claude-plugin/commands/figma-feedback-init.md`
-- Create: `.claude-plugin/commands/figma-feedback-capture.md`
-- Create: `.claude-plugin/commands/figma-feedback-push.md`
-- Create: `.claude-plugin/commands/figma-feedback-pull.md`
-- Create: `.claude-plugin/commands/figma-feedback-plan.md`
-- Create: `.claude-plugin/commands/figma-feedback-close-round.md`
+- Create: `commands/figma-feedback-help.md`
+- Create: `commands/figma-feedback-init.md`
+- Create: `commands/figma-feedback-capture.md`
+- Create: `commands/figma-feedback-push.md`
+- Create: `commands/figma-feedback-pull.md`
+- Create: `commands/figma-feedback-plan.md`
+- Create: `commands/figma-feedback-close-round.md`
 
-Each command file is a short markdown doc with frontmatter. Its body tells Claude to invoke the skill at `.claude-plugin/skills/figma-feedback/SKILL.md` (created in Task 14) with the specific phase argument.
+Each command file is a short markdown doc with frontmatter. Its body tells Claude to invoke the skill at `skills/figma-feedback/SKILL.md` (created in Task 14) with the specific phase argument.
 
 - [ ] **Step 1: Create `.claude-plugin/plugin.json`**
 
@@ -1696,7 +1696,7 @@ Each command file is a short markdown doc with frontmatter. Its body tells Claud
 }
 ```
 
-- [ ] **Step 2: Create `.claude-plugin/commands/figma-feedback-help.md`**
+- [ ] **Step 2: Create `commands/figma-feedback-help.md`**
 
 ```markdown
 ---
@@ -1724,7 +1724,7 @@ Workflow: `init` → `capture` → `push` → *(stakeholders comment)* → `pull
 See the README at the plugin install location for setup details (Figma MCP install, Figma Personal Access Token, JSON Schema editor support).
 ```
 
-- [ ] **Step 3: Create `.claude-plugin/commands/figma-feedback-init.md`**
+- [ ] **Step 3: Create `commands/figma-feedback-init.md`**
 
 ```markdown
 ---
@@ -1734,7 +1734,7 @@ description: Set up figma-feedback in the current repo (config, env, round state
 Invoke the skill `figma-feedback` with phase `init`.
 ```
 
-- [ ] **Step 4: Create `.claude-plugin/commands/figma-feedback-capture.md`**
+- [ ] **Step 4: Create `commands/figma-feedback-capture.md`**
 
 ```markdown
 ---
@@ -1744,7 +1744,7 @@ description: Capture screenshots of configured routes and preview the Figma layo
 Invoke the skill `figma-feedback` with phase `capture`. Pass through any arguments the user provided (which may be a subset of route labels to capture).
 ```
 
-- [ ] **Step 5: Create `.claude-plugin/commands/figma-feedback-push.md`**
+- [ ] **Step 5: Create `commands/figma-feedback-push.md`**
 
 ```markdown
 ---
@@ -1754,7 +1754,7 @@ description: Upload captured PNGs to Figma and create the Round N page+frames vi
 Invoke the skill `figma-feedback` with phase `push`.
 ```
 
-- [ ] **Step 6: Create `.claude-plugin/commands/figma-feedback-pull.md`**
+- [ ] **Step 6: Create `commands/figma-feedback-pull.md`**
 
 ```markdown
 ---
@@ -1764,7 +1764,7 @@ description: Pull stakeholder comments from Figma for the current round
 Invoke the skill `figma-feedback` with phase `pull`.
 ```
 
-- [ ] **Step 7: Create `.claude-plugin/commands/figma-feedback-plan.md`**
+- [ ] **Step 7: Create `commands/figma-feedback-plan.md`**
 
 ```markdown
 ---
@@ -1774,7 +1774,7 @@ description: Cluster Figma comments by theme and write a proposed change plan
 Invoke the skill `figma-feedback` with phase `plan`.
 ```
 
-- [ ] **Step 8: Create `.claude-plugin/commands/figma-feedback-close-round.md`**
+- [ ] **Step 8: Create `commands/figma-feedback-close-round.md`**
 
 ```markdown
 ---
@@ -1793,12 +1793,12 @@ git commit -m "feat: add plugin manifest and 7 slash commands"
 
 ---
 
-## Task 14: `.claude-plugin/skills/figma-feedback/SKILL.md` — orchestration brain
+## Task 14: `skills/figma-feedback/SKILL.md` — orchestration brain
 
 This is the doc Claude reads to know how to handle each phase. It documents the exact MCP tool calls, the exact TS script invocations, and the exact files to write.
 
 **Files:**
-- Create: `.claude-plugin/skills/figma-feedback/SKILL.md`
+- Create: `skills/figma-feedback/SKILL.md`
 
 - [ ] **Step 1: Create the skill file**
 
@@ -1975,7 +1975,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
 - [ ] **Step 2: Commit**
 
 ```bash
-git add .claude-plugin/skills/
+git add skills/
 git commit -m "feat: add figma-feedback skill with per-phase orchestration"
 ```
 
@@ -1999,7 +1999,7 @@ A Claude Code plugin that captures localhost web prototypes, pushes them to Figm
 - Playwright Chromium (installed by `npm install` via `npx playwright install chromium`)
 - A Figma account with edit access to the file you'll be pushing into
 - **The official Figma MCP server connected to your Claude Code session** (`figma/mcp-server-guide`, remote mode). Setup: https://github.com/figma/mcp-server-guide
-  - Community alternative (free, less battle-tested): `southleft/figma-console-mcp` — not officially supported by this plugin but the skill can be adapted by changing the MCP tool names in `.claude-plugin/skills/figma-feedback/SKILL.md`.
+  - Community alternative (free, less battle-tested): `southleft/figma-console-mcp` — not officially supported by this plugin but the skill can be adapted by changing the MCP tool names in `skills/figma-feedback/SKILL.md`.
 - A Figma Personal Access Token (for REST image uploads + comment reads, separate from MCP auth): https://www.figma.com/developers/api#access-tokens
 
 ## Install the plugin
@@ -2075,7 +2075,7 @@ This plugin's CI cannot verify the Figma MCP integration end-to-end. Before tagg
 10. Run `/figma-feedback-close-round` — verify the Figma file has a `Changelog` page with a `Round 1 → Round 2` frame.
 11. Verify `feedback/.round-state.json` shows `currentRound: 2`.
 
-If any step fails, the corresponding phase in `.claude-plugin/skills/figma-feedback/SKILL.md` is the place to look.
+If any step fails, the corresponding phase in `skills/figma-feedback/SKILL.md` is the place to look.
 
 ## Limitations (v1)
 
