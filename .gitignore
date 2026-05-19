@@ -1,0 +1,14 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Env
+.env
+.env.local
+
+# OS
+.DS_Store
