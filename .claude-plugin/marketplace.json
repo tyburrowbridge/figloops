@@ -1,0 +1,20 @@
+{
+  "name": "figma-feedback",
+  "owner": {
+    "name": "Ty Burrowbridge",
+    "email": "tyburrowbridge@gmail.com"
+  },
+  "metadata": {
+    "description": "Local marketplace housing the figma-feedback-plugin.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "figma-feedback-plugin",
+      "source": "./",
+      "description": "Capture localhost prototypes into Figma for stakeholder review; ingest comments and propose change plans.",
+      "category": "design",
+      "tags": ["figma", "feedback", "playwright", "stakeholder-review"]
+    }
+  ]
+}
