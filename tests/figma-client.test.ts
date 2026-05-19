@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { uploadImage } from '../src/figma-client.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { uploadImage, fetchComments } from '../src/figma-client.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const readFixture = (name: string) =>
+  JSON.parse(readFileSync(join(here, 'fixtures', name), 'utf8'));
 
 describe('uploadImage', () => {
   beforeEach(() => {
@@ -63,5 +70,61 @@ describe('uploadImage', () => {
         bytes: Buffer.from([0]),
       }),
     ).rejects.toThrowError(/403.*Forbidden/);
+  });
+});
+
+describe('fetchComments', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('GETs the correct URL with token header', async () => {
+    (fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => readFixture('figma-comments-response.json'),
+    });
+
+    await fetchComments({ fileKey: 'abc123', token: 'tok' });
+
+    const [url, init] = (fetch as any).mock.calls[0];
+    expect(url).toBe('https://api.figma.com/v1/files/abc123/comments');
+    expect(init.method).toBe('GET');
+    expect(init.headers['X-Figma-Token']).toBe('tok');
+  });
+
+  it('returns an array of parsed comments', async () => {
+    (fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => readFixture('figma-comments-response.json'),
+    });
+
+    const comments = await fetchComments({ fileKey: 'abc123', token: 'tok' });
+    expect(comments).toHaveLength(3);
+    expect(comments[0]).toMatchObject({
+      id: '12345',
+      message: 'Make this button bigger',
+      nodeId: '1:42',
+      author: 'Sarah',
+      resolved: false,
+    });
+    expect(comments[2].resolved).toBe(true);
+  });
+
+  it('throws on 4xx', async () => {
+    (fetch as any).mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    });
+
+    await expect(
+      fetchComments({ fileKey: 'abc123', token: 'bad' }),
+    ).rejects.toThrowError(/401.*Unauthorized/);
   });
 });
