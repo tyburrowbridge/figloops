@@ -1,6 +1,6 @@
 {
   "name": "figma-feedback-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code plugin: capture localhost prototypes into Figma for stakeholder review",
   "type": "module",
   "private": true,

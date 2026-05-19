@@ -1,6 +1,6 @@
 ---
 name: figma-feedback
-description: Orchestrate the figma-feedback-plugin workflow. Use when handling /figma-feedback-* commands. Coordinates TS helper scripts and the Figma MCP server to capture localhost prototypes, push them to Figma, pull stakeholder comments, propose a change plan, and write a per-round changelog.
+description: Orchestrate the figma-feedback-plugin workflow. Use when handling /figma-feedback-plugin:* commands. Coordinates TS helper scripts and the Figma MCP server to capture localhost prototypes, push them to Figma, pull stakeholder comments, propose a change plan, and write a per-round changelog.
 ---
 
 # figma-feedback orchestration
@@ -51,7 +51,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
    ```
 8. Copy `<PLUGIN_DIR>/.env.example` to the consuming repo's `.env` (do NOT overwrite if it already exists — instead, tell the user to manually add any missing keys). Fill in `FIGMA_FEEDBACK_PLUGIN_DIR=<PLUGIN_DIR>` automatically. Tell the user to fill in `FIGMA_TOKEN` (link: https://www.figma.com/developers/api#access-tokens).
 9. Initialize round state by running: `<PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/init-state.ts` from the consuming repo's cwd. Expected stdout: `{ "initialized": ".../feedback/.round-state.json", "currentRound": 1 }`.
-10. Tell the user the next step is to fill in `.env`, then run `/figma-feedback-capture`.
+10. Tell the user the next step is to fill in `.env`, then run `/figma-feedback-plugin:capture`.
 
 ## Phase: `capture`
 
@@ -68,7 +68,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
      3 columns wide, rows added as needed.
    Approve push? (yes / re-capture / cancel)
    ```
-4. If the user approves, instruct them to run `/figma-feedback-push`. Do not auto-run push.
+4. If the user approves, instruct them to run `/figma-feedback-plugin:push`. Do not auto-run push.
 5. If any captures failed, list them with their error messages so the user can fix and re-run.
 
 ## Phase: `push`
@@ -101,13 +101,13 @@ This preflight runs in `init` too — it's how we know the user has set up the M
 1. Run MCP preflight.
 2. Run `<PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/pull-comments.ts` from the consuming repo's cwd. Capture stdout JSON: `{ round, totalComments, forThisRound, wroteTo }`.
 3. Tell the user `forThisRound` comments were saved to `wroteTo`.
-4. If `forThisRound` is 0, tell the user no feedback exists yet for this round and suggest waiting before running `/figma-feedback-plan`.
+4. If `forThisRound` is 0, tell the user no feedback exists yet for this round and suggest waiting before running `/figma-feedback-plugin:plan`.
 
 ## Phase: `plan`
 
 1. Run MCP preflight.
 2. Read `feedback/round-<round>/comments.json` (resolve `<round>` from `feedback/.round-state.json`).
-3. If the file does not exist, tell the user to run `/figma-feedback-pull` first.
+3. If the file does not exist, tell the user to run `/figma-feedback-plugin:pull` first.
 4. Cluster the comments by inferred semantic theme. Do not group by frame or by author — group by what the comment is *about* (e.g., "Navigation clarity", "Color contrast", "Onboarding flow"). One theme may span multiple frames.
 5. Write `feedback/round-<round>/themes.md` with one section per theme:
    ```markdown
@@ -152,7 +152,7 @@ This preflight runs in `init` too — it's how we know the user has set up the M
    ```bash
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/round-state.js').then(m => { const n = m.bumpRound('feedback/.round-state.json'); console.log('currentRound now', n); })"
    ```
-10. Tell the user the round summary was written to the `Changelog` page and that the next `/figma-feedback-capture` will start Round `<round + 1>`.
+10. Tell the user the round summary was written to the `Changelog` page and that the next `/figma-feedback-plugin:capture` will start Round `<round + 1>`.
 
 ## Error handling principles
 
