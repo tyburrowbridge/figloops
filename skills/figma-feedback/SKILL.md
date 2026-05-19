@@ -34,7 +34,10 @@ This preflight runs in `init` too — it's how we know the user has set up the M
 
 1. Run the MCP preflight above.
 2. Determine `<PLUGIN_DIR>` (this skill's directory's parent's parent — `.../figma-feedback-plugin`). If the user hasn't already set `FIGMA_FEEDBACK_PLUGIN_DIR`, tell them the absolute path and ask them to confirm it. You'll write it into `.env` in step 8.
-3. Ask the user for their Figma file URL (e.g., `https://www.figma.com/file/<KEY>/<NAME>`). Extract the file key (the path segment after `/file/`).
+3. Ask the user for their Figma file URL. Accept any of these formats and extract the file key (the path segment after the format prefix):
+   - `https://www.figma.com/file/<KEY>/<NAME>` (legacy)
+   - `https://www.figma.com/design/<KEY>/<NAME>` (current default)
+   - `https://www.figma.com/proto/<KEY>/<NAME>` (prototype mode — same underlying file)
 4. Ask the user for their dev server URL (default offer: `http://localhost:3000`).
 5. Ask the user for the changelog page name (default offer: `Changelog`).
 6. Ask the user for an initial list of routes (label + path pairs). Encourage at least 2 to start.
@@ -79,11 +82,21 @@ This preflight runs in `init` too — it's how we know the user has set up the M
 4. Read the consuming repo's `figma-feedback.config.json` to get `figma.fileKey` and `viewport.width`.
 5. Call the Figma MCP to find or create the page named `Round <round>`. The exact tool call depends on which MCP is connected; for the official Figma MCP (`use_figma`), the operation is "find or create a page in file `<fileKey>` named `Round <round>`." Capture the returned page ID.
 6. For each upload in `uploads` (order matters; preserve the order from the script's output):
-   - Compute grid position with `col = i % 3` and `row = floor(i / 3)`. Frame dimensions: `viewport.width` × the actual PNG height (Figma will display the image at its native height when `scaleMode: 'FIT'`; for v1 use `'FILL'` per the spec).
+   - Compute grid position with `col = i % 3` and `row = floor(i / 3)`. Frame dimensions: `viewport.width` × the actual PNG height. Use `scaleMode: 'FILL'` per the spec.
    - Frame name: `<NN> - <label>` where NN is the 2-digit one-indexed position.
    - Frame x: `col * (viewport.width + 40)`. Frame y: `row * 1000` (provisional; final positioning is best-effort since we don't know image heights yet).
-   - Call the Figma MCP to create a frame on the page with that name, size, and position, and set `fills` to `[{ type: 'IMAGE', imageHash: <hash>, scaleMode: 'FILL' }]`.
-   - Capture the returned frame ID.
+   - Call the Figma MCP to **create the frame** on the page with that name, size, and position. Capture the returned frame node ID. Do NOT set fills in this same call — see step 6a.
+
+6a. **Apply image fills directly via Plugin API code.** The MCP's typical frame-creation tool returns successful image hashes but does not always auto-bind them to the new frame's fills (observed: hashes returned but fills empty after creation). Work around this by executing Plugin API code after the frame exists, one frame at a time:
+
+   ```js
+   // Pseudocode for the call the skill makes via the MCP's code-execution tool
+   // (e.g., use_figma "run code" or figma_execute for the community MCP):
+   const node = figma.getNodeById('<frameId>');
+   node.fills = [{ type: 'IMAGE', imageHash: '<hash>', scaleMode: 'FILL' }];
+   ```
+
+   Map each frame's `<frameId>` to its `<hash>` by preserving the order from the `uploads` array. Verify each fill applied before moving on (a quick `figma.getNodeById('<frameId>').fills` check is enough).
 7. Write `feedback/round-<round>/push-manifest.json`:
    ```json
    {
