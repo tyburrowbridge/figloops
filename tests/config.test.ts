@@ -76,4 +76,10 @@ describe('loadConfig', () => {
   it('throws if the file is missing', () => {
     expect(() => loadConfig(join(dir, 'nope.json'))).toThrowError(/ENOENT|not found/i);
   });
+
+  it('throws a clear error when the file contains malformed JSON', () => {
+    const path = join(dir, 'bad-json.json');
+    writeFileSync(path, '{ this is not valid json');
+    expect(() => loadConfig(path)).toThrowError(/Invalid JSON in config/);
+  });
 });

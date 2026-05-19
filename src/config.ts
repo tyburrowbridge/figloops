@@ -31,7 +31,12 @@ export type Config = z.infer<typeof configSchema>;
 
 export function loadConfig(path: string): Config {
   const raw = readFileSync(path, 'utf8');
-  const data: unknown = JSON.parse(raw);
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`Invalid JSON in config at ${path}: ${(err as Error).message}`);
+  }
   const result = configSchema.safeParse(data);
   if (!result.success) {
     const issues = result.error.issues
