@@ -126,15 +126,21 @@ figma-feedback.config.json
        01-login.png        → Frame '01 - Login'
        02-dashboard.png    → Frame '02 - Dashboard'
        …
-     Grid: 3 cols × 2 rows on page 'Round 2'.
+     Expected Figma layout on page 'Round 2':
+       3 columns wide, rows added as needed (here: 2 rows).
      Approve push? (yes / edit list / re-capture)"
         │ (user approval)
         ▼
   /figma-feedback-push
         │
         ├── POST images via Figma image upload endpoint
-        ├── Locate or create the 'Round N' page
-        ├── Place each image as a frame in grid layout, with label
+        ├── Look up the 'Round N' page in the Figma file
+        │   └─ If missing: print a seed checklist for the user
+        │      ("Create page 'Round N' with N empty frames named
+        │        '01 - Login', '02 - Dashboard', … then re-run")
+        │      and exit. See Risks for why this manual step exists.
+        ├── For each captured PNG, find the matching empty frame by name
+        │   and replace its fill with the uploaded image hash
         ├── Write feedback/round-N/push-manifest.json
         │   { round, page_id, frames: [{label, frame_id, image_hash}] }
         ▼
@@ -197,7 +203,6 @@ figma-feedback.config.json
 
 ```json
 {
-  "$schema": "./node_modules/figma-feedback-plugin/config.schema.json",
   "devServer": {
     "url": "http://localhost:3000",
     "waitFor": "networkidle"
@@ -210,14 +215,13 @@ figma-feedback.config.json
   "routes": [
     { "label": "Login",     "path": "/login" },
     { "label": "Dashboard", "path": "/dashboard", "waitFor": "[data-loaded]" }
-  ],
-  "preCapture": null
+  ]
 }
 ```
 
 - Validated with **zod** on load; missing/wrong-shape fields produce an error citing the exact field path.
-- `preCapture` is reserved for a future authenticated-route hook; always `null` in v1.
 - `fileKey` is extracted from the user's Figma file URL during `/figma-feedback-init`.
+- The plugin ships `config.schema.json` for users who want editor JSON-Schema linting; they can add `"$schema": "<absolute path or URL>"` themselves. Not added by default because the plugin install path isn't predictable from the consuming repo.
 
 ### Secrets — `.env` (consuming repo, gitignored)
 
@@ -231,7 +235,7 @@ FIGMA_TOKEN=figd_xxxxx
 
 ### Round state
 
-`feedback/.round-state.json` — `{ "currentRound": 2 }`. Bumped only by `/figma-feedback-close-round`. Every other command reads it to know which `round-N/` directory to use.
+`feedback/.round-state.json` — `{ "currentRound": 2 }`. Created by `/figma-feedback-init` with `currentRound: 1`. Bumped only by `/figma-feedback-close-round`. Every other command reads it to know which `round-N/` directory to use.
 
 ## Error handling
 
@@ -244,7 +248,7 @@ Validate at boundaries, trust internal code:
 | Figma API push | 4xx (bad token, no permission) | Abort, print Figma's error message verbatim, point at PAT setup |
 | Figma API push | 5xx / rate limit | Exponential-backoff retry (3 attempts), then abort with a partial-state warning |
 | Comments pull | No comments yet | Empty `comments.json`; skill tells user "no feedback yet, nothing to plan" |
-| Changelog write | `Changelog` page missing | Auto-create on first round close |
+| Changelog write | `Changelog` page missing | Print seed checklist ("create page 'Changelog' in your Figma file, then re-run") and exit without writing |
 
 No try/catch around code that cannot fail internally. No fallbacks for impossible states.
 
@@ -258,16 +262,27 @@ No try/catch around code that cannot fail internally. No fallbacks for impossibl
 
 ## Risks
 
-### Figma frame creation via REST API
+### Figma page/frame creation via REST API
 
-Figma's REST API supports **uploading images** by hash but does **not** straightforwardly support **creating frames** in arbitrary files without either:
+Figma's REST API supports **uploading images by hash** and **replacing image fills on existing frames**, but does **not** support creating **pages or frames** in arbitrary files without either:
 
 - (a) Running inside a Figma desktop plugin (uses the Figma Plugin API, not REST), or
 - (b) Holding paid **Dev Mode REST API** access.
 
-**v1 fallback (agreed):** the first round requires the user to manually create the `Round 1` page and an empty frame per intended capture (Figma supports drag-and-drop image replacement by frame). Subsequent rounds update existing frames by ID via the API; new rounds add new pages with the same manual seed step. Frame IDs are recorded in `push-manifest.json` for reuse.
+**v1 user experience (agreed):** before each round's `/figma-feedback-push`, the user manually creates a new page in Figma named `Round N` and adds one empty frame per intended capture, naming each frame after the route label (e.g. `01 - Login`, `02 - Dashboard`). On push:
 
-This is the largest implementation risk and the v1 fallback is acknowledged as imperfect. Investigating a companion Figma plugin (option a) is deferred to v2.
+- `push.ts` looks up the `Round N` page by name and matches each PNG to a frame by name.
+- For each match, it uploads the PNG and updates the frame's image fill via the API.
+- If the page is missing or any frame is missing, the script prints a precise seed checklist and exits without modifying Figma.
+
+The push-manifest records the resolved frame IDs so later steps (comment pulling, changelog) don't need to re-resolve by name.
+
+This manual seed step per round is the largest UX friction in v1. Two v2 paths to eliminate it:
+
+- Ship a small companion Figma desktop plugin that does the seeding when invoked by the user from inside Figma, OR
+- Adopt the paid Dev Mode REST API.
+
+Both deferred to v2.
 
 ## Open questions
 
