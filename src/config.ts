@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readFileSync } from 'node:fs';
 
 export const configSchema = z.object({
   devServer: z.object({
@@ -27,3 +28,16 @@ export const configSchema = z.object({
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+export function loadConfig(path: string): Config {
+  const raw = readFileSync(path, 'utf8');
+  const data: unknown = JSON.parse(raw);
+  const result = configSchema.safeParse(data);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
+      .join('\n');
+    throw new Error(`Invalid config at ${path}:\n${issues}`);
+  }
+  return result.data;
+}

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { configSchema } from '../src/config.js';
+import { tmpdir } from 'node:os';
+import { configSchema, loadConfig } from '../src/config.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readFixture = (name: string) =>
@@ -42,5 +43,37 @@ describe('configSchema', () => {
     const data = readFixture('valid-config.json');
     data.routes = [];
     expect(configSchema.safeParse(data).success).toBe(false);
+  });
+});
+
+describe('loadConfig', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'fb-cfg-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('loads and validates a valid config file', () => {
+    const data = readFixture('valid-config.json');
+    const path = join(dir, 'figma-feedback.config.json');
+    writeFileSync(path, JSON.stringify(data));
+    const cfg = loadConfig(path);
+    expect(cfg.routes).toHaveLength(2);
+    expect(cfg.devServer.waitFor).toBe('networkidle');
+  });
+
+  it('throws a clear error with field paths when invalid', () => {
+    const data = readFixture('invalid-config-missing-routes.json');
+    const path = join(dir, 'bad.json');
+    writeFileSync(path, JSON.stringify(data));
+    expect(() => loadConfig(path)).toThrowError(/routes/);
+  });
+
+  it('throws if the file is missing', () => {
+    expect(() => loadConfig(join(dir, 'nope.json'))).toThrowError(/ENOENT|not found/i);
   });
 });
