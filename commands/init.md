@@ -1,5 +1,5 @@
 ---
-description: Set up figma-feedback in the current repo (config, env, round state)
+description: One-time project setup wizard (verifies MCP, Figma PAT, file access)
 ---
 
-Invoke the skill `figma-feedback` with phase `init`.
+Invoke the skill `figloops` with phase `init`.
