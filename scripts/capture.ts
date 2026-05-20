@@ -2,7 +2,7 @@ import { chromium, type Browser } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../src/config.js';
-import { readRoundState } from '../src/round-state.js';
+import { loadState, writeState, currentRoundData, type Capture as StateCapture } from '../src/state.js';
 
 export interface CaptureRoute {
   label: string;
@@ -19,7 +19,7 @@ export interface CaptureArgs {
 }
 
 export interface CaptureResult {
-  captures: Array<{ label: string; path: string }>;
+  captures: Array<{ label: string; path: string; filename: string }>;
   failed: Array<{ label: string; error: string }>;
 }
 
@@ -47,7 +47,7 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
           await page.waitForSelector(r.waitFor, { timeout: 10_000 });
         }
         await page.screenshot({ path: out, fullPage: true });
-        captures.push({ label: r.label, path: out });
+        captures.push({ label: r.label, path: out, filename });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         failed.push({ label: r.label, error: message });
@@ -60,11 +60,12 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
   }
 }
 
-// CLI entry point: invoked by /figma-feedback-capture
+// CLI entry point: invoked by the figloops skill (capture phase)
 async function main() {
   const cwd = process.cwd();
-  const config = loadConfig(join(cwd, 'figma-feedback.config.json'));
-  const state = readRoundState(join(cwd, 'feedback', '.round-state.json'));
+  const config = loadConfig(join(cwd, 'figloops.config.json'));
+  const statePath = join(cwd, 'feedback', 'state.json');
+  const state = loadState(statePath);
   const outDir = join(cwd, 'feedback', `round-${state.currentRound}`, 'captures');
 
   const result = await capture({
@@ -72,8 +73,17 @@ async function main() {
     viewport: config.viewport,
     baseUrl: config.devServer.url,
     waitFor: config.devServer.waitFor,
-    routes: config.routes,
+    routes: config.routes.map((r) => ({ label: r.label, path: r.path, waitFor: r.waitFor })),
   });
+
+  // Persist into state.json for the current round
+  const round = currentRoundData(state);
+  round.captures = result.captures.map<StateCapture>((c) => ({
+    label: c.label,
+    path: config.routes.find((r) => r.label === c.label)!.path,
+    filename: c.filename,
+  }));
+  writeState(statePath, state);
 
   process.stdout.write(JSON.stringify({ round: state.currentRound, ...result }, null, 2));
 }
