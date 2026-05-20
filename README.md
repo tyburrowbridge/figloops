@@ -93,15 +93,6 @@ If any step fails, the matching phase in `skills/figloops/SKILL.md` is the place
 - No fallback if the Figma MCP is unavailable — commands fail hard with setup instructions.
 - Official Figma MCP's "Write to canvas" feature is currently beta-free; Figma has indicated it will become a paid feature.
 
-## Migrating from `figma-feedback-plugin` v0.1.x
-
-There is no automatic migration. To switch:
-
-1. Finish or abandon any in-progress round under v0.1.x.
-2. Install figloops.
-3. Run `/figloops:init` in your project (it will not touch the old `figma-feedback.config.json` or `feedback/.round-state.json`).
-4. Delete the old artifacts (`figma-feedback.config.json`, `feedback/.round-state.json`, old per-round `plan.md`/`addressed.md`/`themes.md`/`comments.json`/`push-manifest.json` files) once you're confident the new setup works.
-
 ## Development
 
 ```bash

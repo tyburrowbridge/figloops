@@ -1,29 +1,26 @@
-# figloops v1.0.0 — Design
+# figloops — Design
 
 **Date:** 2026-05-20
-**Status:** Design approved; pending written-spec review
-**Predecessor:** `figma-feedback-plugin` v0.1.3 (`docs/superpowers/specs/2026-05-19-figma-feedback-plugin-design.md`)
+**Status:** Implemented in v1.0.0
 
 ## Purpose
 
-`figloops` is the next major release of what was previously `figma-feedback-plugin`. The goal: take an already-working capture/review/changelog loop and make the user experience disappear. Instead of seven discrete commands the user has to memorize and sequence in the right order, figloops drives the entire round forward through one wizard command, surfaces a visual progress checklist using Claude Code's native task tracker, and gates only where genuine judgment is needed.
+`figloops` is a Claude Code plugin that turns localhost web prototypes into a stakeholder-review loop in Figma. The plugin captures screenshots of configured routes, pushes them to a Figma file as labeled frames, ingests the comments stakeholders leave, proposes a per-round change plan, tracks what gets shipped, and writes a per-round changelog entry back into Figma.
 
-This release is **breaking on purpose**. Plugin name, command surface, config file name, and state file all change. There is no migration path from v0.1.x.
+The user experience is wizard-driven: one command (`/figloops:next`) advances the entire round through nine phases autonomously, gating only where genuine human judgment is needed.
 
 ## Scope
 
 ### In scope
 
-- **Rename** `figma-feedback-plugin` → `figloops`, including all slash commands, config filename, and env vars
-- **Wizard-driven workflow**: collapse seven commands into four (`init`, `next`, `status`, `help`)
+- **Wizard-driven workflow**: four commands total (`init`, `next`, `status`, `help`)
 - **Forced init verification**: every input validated against a live external check before init completes
-- **JSON state of record**: `feedback/state.json` replaces `.round-state.json` + the canonical role of `plan.md` / `addressed.md`
-- **Auto-generated `snapshot.md`**: human-readable per-round artifact regenerated from JSON state
-- **Native task tracker progress**: skill drives `TaskCreate` / `TaskUpdate` so Claude Code renders the round phase list automatically
-- **Author names in citations**: every comment reference uses the Figma user's display handle, not just the numeric ID
-- **Beautified help**: state-aware `:help` showing "you are here" if a round is in progress
+- **JSON state of record**: `feedback/state.json` is the canonical store; `feedback/round-N/snapshot.md` is auto-generated audit output
+- **Native task tracker progress**: the skill drives `TaskCreate` / `TaskUpdate` so Claude Code renders the round phase list automatically
+- **Author names in citations**: every comment reference uses the Figma user's display name first, numeric ID in parens
+- **State-aware help**: `:help` shows "you are here" if a round is in progress, otherwise points at `:init`
 
-### Out of scope (carried from v0.1.x)
+### Out of scope
 
 - Deployed-URL capture (Vercel/Netlify/GitHub Pages)
 - Authenticated-route capture
@@ -33,31 +30,26 @@ This release is **breaking on purpose**. Plugin name, command surface, config fi
 - Plugin-driven implementation of changes
 - REST-only fallback when the Figma MCP is unavailable
 - Official support for community Figma MCPs
-
-### Explicitly out of scope (new for this release)
-
-- Migration from v0.1.x configs or state files — hard cutover
 - Command escape hatches like `:back` or `:redo-capture` — delete artifacts and re-run if needed
 - Background polling for new Figma comments — user invokes `:next` when they think feedback has arrived
 - Multi-user state ownership — `state.json` assumes one developer drives the round
 
-## Decisions adopted during brainstorming
+## Key decisions
 
 | # | Decision | Why |
 |---|---|---|
-| 1 | JSON state is source of truth; `.md` is a generated snapshot | User wants in-product checklist UX but still wants grep/diff for audit. Best of both. |
+| 1 | JSON state is source of truth; `.md` is a generated snapshot | In-product checklist UX, plus grep/diff/PR-review-friendly audit. Best of both. |
 | 2 | Init verifies MCP probe, PAT (`GET /v1/me`), and file access (`GET /v1/files/<key>`) | Catches the three real failure modes at the moment the user is focused on setup, not three commands later. |
-| 3 | Hard cutover, no migration | v0.1.x is recent and not widely distributed. Clean break keeps the new code uncluttered. |
-| 4 | Wizard-only model with `:next` as the driver | User explicitly wants "as little input as is reasonable." Removes "what command was next?" cognitive load. |
-| 5 | Native task tracker (`TaskCreate`/`TaskUpdate`) for visual progress | Matches the screenshot reference exactly. Zero rendering code on our side. |
-| 6 | `feedback/state.json` at repo root (not hidden under `.figloops/`) | Sits alongside the existing `feedback/round-N/` artifacts; visible to the user. |
-| 7 | "Suggest a fresh Figma file" is a passive tip, not a blocking prompt | Removing unnecessary friction at init. |
-| 8 | Add a comment-review gate between pull and cluster | User asked for this checkpoint so they can spot-check raw comments before Claude clusters them. |
-| 9 | `reject all` at plan-approval routes to round close with an empty changelog note | Preserves the audit trail without forcing implementation. |
+| 3 | Wizard-only model with `:next` as the driver | "As little input as is reasonable." Removes "what command was next?" cognitive load. |
+| 4 | Native task tracker (`TaskCreate`/`TaskUpdate`) for visual progress | Matches Claude Code's standard tracker visual. Zero rendering code on our side. |
+| 5 | `feedback/state.json` at repo root (not hidden under `.figloops/`) | Sits alongside the existing `feedback/round-N/` artifacts; visible to the user. |
+| 6 | "Suggest a fresh Figma file" is a passive tip, not a blocking prompt | Removing unnecessary friction at init. |
+| 7 | Comment-review gate between pull and cluster | Lets the user spot-check raw comments before Claude clusters them. |
+| 8 | `reject all` at plan-approval routes to round close with an empty changelog note | Preserves the audit trail without forcing implementation. |
 
 ## Command surface
 
-Four commands total. The old discrete commands (`capture`, `push`, `pull`, `plan`, `close-round`) are removed; their behavior moves into the `next` state machine.
+Four commands total. Each has one clear purpose.
 
 | Command | What it does |
 |---|---|
@@ -147,14 +139,10 @@ Single file per round, regenerated whenever state changes. Top-of-file header ma
 
 Sections: Captures, Comments (with author names), Themes, Plan (with `[✓]` / `[ ]` per item). The plugin never reads `snapshot.md` — it exists for git diff, PR review, and grep.
 
-### Config / env renames
+### Config / environment
 
-| Old | New |
-|---|---|
-| `figma-feedback.config.json` | `figloops.config.json` |
-| `FIGMA_FEEDBACK_PLUGIN_DIR` | `FIGLOOPS_PLUGIN_DIR` |
-| `FIGMA_TOKEN` | `FIGMA_TOKEN` (unchanged — it's a Figma concept, not a plugin one) |
-| `feedback/.round-state.json` | `feedback/state.json` (richer schema, repo root) |
+- **`figloops.config.json`** (consuming repo) — routes, viewport, Figma file key, changelog page name. Schema in `config.schema.json`.
+- **`.env`** (consuming repo) — `FIGMA_TOKEN` for REST calls, `FIGLOOPS_PLUGIN_DIR` so the skill can locate its TS helper scripts.
 
 ## Init wizard sequence
 
@@ -185,7 +173,7 @@ Linear. Refuses to advance until each check passes. Each failure prints the exac
 
 ### Visible tasks (rendered by Claude Code's native tracker)
 
-The skill calls `TaskCreate` at round start for nine tasks, then `TaskUpdate` to mark each `in_progress` / `completed` as it advances. The user sees the same checklist visual shown in the reference screenshot:
+The skill calls `TaskCreate` at round start for nine tasks, then `TaskUpdate` to mark each `in_progress` / `completed` as it advances:
 
 1. Capture screenshots
 2. Push to Figma
@@ -251,7 +239,7 @@ When every approved item is `shipped` — or the user replies `close` — auto-a
 
 ## Author-name treatment
 
-Figma's `GET /v1/files/<key>/comments` response already includes the commenter's display name in `user.handle`. The plugin must surface this everywhere a comment is cited:
+Figma's `GET /v1/files/<key>/comments` response already includes the commenter's display name in `user.handle`. The plugin surfaces this everywhere a comment is cited:
 
 - `state.json` stores `authorName` and `authorHandle` per comment
 - `snapshot.md` cites as `Sarah Lee (#12)` — name first, ID in parens
@@ -309,35 +297,37 @@ Requires: Figma MCP connected, Figma PAT
 ## Repo layout (the plugin itself)
 
 ```
-figloops/                            # was figma-feedback-plugin/
+figloops/
 ├── .claude-plugin/
-│   ├── plugin.json                  # name: "figloops"
-│   └── marketplace.json             # plugin entry renamed
+│   ├── plugin.json
+│   └── marketplace.json
 ├── commands/
 │   ├── help.md
 │   ├── init.md
-│   ├── next.md                      # NEW
-│   └── status.md                    # NEW
-│   # capture.md, push.md, pull.md, plan.md, close-round.md REMOVED
+│   ├── next.md
+│   └── status.md
 ├── skills/
-│   └── figloops/SKILL.md            # was skills/figma-feedback/SKILL.md
+│   └── figloops/SKILL.md
 ├── scripts/
-│   ├── capture.ts                   # unchanged
-│   ├── upload-images.ts             # unchanged
-│   ├── pull-comments.ts             # updated: writes into state.json shape
-│   ├── format-changelog.ts          # updated: reads from state.json shape
-│   └── render-snapshot.ts           # NEW: regenerates feedback/round-N/snapshot.md from state
+│   ├── capture.ts            # Playwright capture; writes captures into state.json
+│   ├── upload-images.ts      # Uploads PNGs via Figma REST; returns image hashes
+│   ├── set-manifest.ts       # Persists pushManifest into state.json
+│   ├── pull-comments.ts      # Fetches + filters comments; writes into state.json
+│   ├── format-changelog.ts   # Renders shipped plan items as changelog markdown
+│   ├── render-snapshot.ts    # Regenerates feedback/round-N/snapshot.md from state
+│   ├── advance-phase.ts      # State-machine transition CLI
+│   ├── update-plan.ts        # Plan item set / status mutation CLI
+│   └── set-themes.ts         # Persists themes array into state.json
 ├── src/
-│   ├── figma-client.ts              # unchanged
-│   ├── config.ts                    # validates figloops.config.json
-│   ├── state.ts                     # NEW: reads/writes feedback/state.json
-│   └── round-state.ts               # REMOVED (folded into state.ts)
+│   ├── figma-client.ts       # Figma REST wrapper (uploads, comments, validators)
+│   ├── config.ts             # Zod schema + loader for figloops.config.json
+│   └── state.ts              # Zod schema + reader/writer for feedback/state.json
 ├── tests/
-├── package.json                     # name: "figloops"
+├── package.json
 ├── tsconfig.json
-├── config.schema.json               # updated for new config name
-├── .env.example                     # updated for FIGLOOPS_PLUGIN_DIR
-└── README.md                        # full rewrite for v1.0.0
+├── config.schema.json
+├── .env.example
+└── README.md
 ```
 
 ## Consuming repo layout
@@ -353,11 +343,9 @@ figloops/                            # was figma-feedback-plugin/
         └── snapshot.md              # auto-generated, never edited
 ```
 
-Note: `push-manifest.json`, `comments.json`, `themes.md`, `plan.md`, `addressed.md` are all gone. Their content lives in `state.json` (canonical) and `snapshot.md` (rendered).
-
 ## Error handling
 
-Same principles as v0.1.x: validate at boundaries, trust internal code, no silent degradation.
+Validate at boundaries, trust internal code, no silent degradation.
 
 | Boundary | Failure | Handling |
 |---|---|---|
@@ -374,15 +362,17 @@ The `:next` state machine is idempotent within a phase — re-running after a fa
 
 ## Testing
 
-TS scripts continue to be unit-testable with vitest:
+TS scripts are unit-testable with vitest:
 
-- `src/state.ts` — full unit coverage for the JSON state operations (load, advance phase, update plan item, regenerate snapshot)
-- `src/config.ts` — unchanged approach
-- `src/figma-client.ts` — unchanged approach (mocked fetch + recorded fixtures)
-- `scripts/render-snapshot.ts` — snapshot tests over fixture `state.json` files
-- `scripts/format-changelog.ts` — snapshot tests over fixture state files
+- `src/state.ts` — full unit coverage for the JSON state operations (load, validate, write, ensureRound)
+- `src/config.ts` — zod schema validation tests
+- `src/figma-client.ts` — mocked fetch with recorded fixtures (uploads, comments, validators)
+- `scripts/render-snapshot.ts` — snapshot tests over fixture `state.json` content
+- `scripts/format-changelog.ts` — snapshot tests over fixture `RoundData`
+- `scripts/advance-phase.ts`, `update-plan.ts`, `set-manifest.ts`, `set-themes.ts` — CLI behavior tests via `execSync` + temp dirs
+- `scripts/capture.ts` — Playwright integration test against a fixture HTTP server
 
-Skill + MCP behavior cannot be unit-tested. The manual smoke test in the README is updated to walk through the wizard end-to-end:
+Skill + MCP behavior cannot be unit-tested. The manual smoke test in the README walks through the wizard end-to-end:
 
 1. Fresh Figma file
 2. `/figloops:init` — verify all three external checks pass and refuse failures
@@ -394,19 +384,9 @@ Skill + MCP behavior cannot be unit-tested. The manual smoke test in the README 
 
 ## Risks
 
-### Same as v0.1.x
-
-- **MCP dependency**: every phase except `capture` requires the Figma MCP. No fallback.
-- **Official Figma MCP "Write to canvas" may become paid**: README continues to document the community alternative as a fallback users can adapt manually.
-- **Skill drift**: skill prescribes exact MCP tool names and argument shapes. Manual smoke test catches drift.
-
-### New for v1.0.0
-
-- **State file corruption.** A bad `state.json` parse takes down every command except `:help`. Mitigation: zod-validate on load with clear error; tell user how to recover.
-- **`snapshot.md` user expectation gap.** Users may edit `snapshot.md` expecting their edits to stick. Mitigation: header warning, plus the file is overwritten on every `:next`. Long-term: consider read-only file perms.
-- **`TaskCreate` interference with non-figloops tasks.** If the user has other tasks in their Claude Code session, figloops phase tasks mix with them in the tracker. Mitigation: prefix all figloops task subjects with `[figloops]` so they're visually grouped. Accepted as cosmetic.
-- **Hard cutover surprises existing users.** v0.1.x users running `/figma-feedback-plugin:*` after upgrade get "command not found." Mitigation: README upgrade note explaining the rename and how to finish an in-flight v0.1.x round.
-
-## Open questions
-
-None blocking implementation. All design decisions captured above.
+- **MCP dependency**: every phase except `capture` requires the Figma MCP. No fallback. If MCP is not connected, every command except `:help` fails at the preflight step with a setup message.
+- **Official Figma MCP "Write to canvas" may become paid**: README documents the community alternative as a fallback users can adapt manually by editing the skill's MCP tool calls.
+- **Skill drift**: the skill prescribes exact MCP tool names and argument shapes. If a future Claude model interprets the skill loosely and improvises different MCP calls, results become non-deterministic. The manual smoke test catches drift.
+- **State file corruption**: a bad `state.json` parse takes down every command except `:help`. Zod-validate on load with clear error tells the user how to recover.
+- **`snapshot.md` user expectation gap**: users may edit `snapshot.md` expecting their edits to stick. Header warning makes the file's derived nature explicit, and the file is overwritten on every `:next`.
+- **`TaskCreate` interference with non-figloops tasks**: if the user has other tasks in their Claude Code session, figloops phase tasks mix with them in the tracker. Mitigation: prefix all figloops task subjects with `[figloops]` so they're visually grouped.
