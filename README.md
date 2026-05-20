@@ -25,11 +25,11 @@ If any of these are missing, `/figloops:init` will refuse to complete and tell y
 In Claude Code:
 
 ```
-/plugin marketplace add tyburrowbridge/figloops@main
+/plugin marketplace add tyburrowbridge/figloops
 /plugin install figloops@figloops
 ```
 
-Pin to a release instead of `main`: `tyburrowbridge/figloops@v1.0.0`.
+To pin to a specific release instead of tracking the default branch: `tyburrowbridge/figloops@v1.0.0`.
 
 ---
 
