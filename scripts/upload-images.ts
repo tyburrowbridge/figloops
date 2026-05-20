@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { loadConfig } from '../src/config.js';
-import { readRoundState } from '../src/round-state.js';
+import { loadState } from '../src/state.js';
 import { uploadImage } from '../src/figma-client.js';
 
 interface UploadOutput {
@@ -31,12 +31,12 @@ async function main() {
   }
 
   const cwd = process.cwd();
-  const config = loadConfig(join(cwd, 'figma-feedback.config.json'));
-  const state = readRoundState(join(cwd, 'feedback', '.round-state.json'));
+  const config = loadConfig(join(cwd, 'figloops.config.json'));
+  const state = loadState(join(cwd, 'feedback', 'state.json'));
   const capturesDir = join(cwd, 'feedback', `round-${state.currentRound}`, 'captures');
 
   if (!existsSync(capturesDir)) {
-    process.stderr.write(`No captures directory at ${capturesDir}. Run /figma-feedback-capture first.\n`);
+    process.stderr.write(`No captures directory at ${capturesDir}. Run /figloops:next first to capture.\n`);
     process.exit(1);
   }
 
