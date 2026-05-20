@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { loadConfig } from '../src/config.js';
-import { loadState } from '../src/state.js';
+import { loadState, currentRoundData, type Capture } from '../src/state.js';
 import { uploadImage } from '../src/figma-client.js';
 
 interface UploadOutput {
@@ -40,10 +40,22 @@ async function main() {
     process.exit(1);
   }
 
+  // Build map of filename -> capture to get canonical labels
+  const captureByFilename = new Map<string, Capture>();
+  for (const capture of currentRoundData(state).captures) {
+    captureByFilename.set(capture.filename, capture);
+  }
+
   const files = readdirSync(capturesDir).filter((f) => f.endsWith('.png')).sort();
   const out: UploadOutput = { round: state.currentRound, uploads: [], failed: [] };
 
   for (const filename of files) {
+    const capture = captureByFilename.get(filename);
+    if (!capture) {
+      out.failed.push({ filename, error: `No capture entry in state.json for ${filename}` });
+      continue;
+    }
+
     const bytes = readFileSync(join(capturesDir, filename));
     try {
       const hash = await uploadImage({
@@ -52,7 +64,7 @@ async function main() {
         filename,
         bytes,
       });
-      out.uploads.push({ label: labelFromFilename(filename), filename, imageHash: hash });
+      out.uploads.push({ label: capture.label, filename, imageHash: hash });
       process.stderr.write(`[upload] ${filename} -> ${hash}\n`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

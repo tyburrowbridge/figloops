@@ -257,17 +257,14 @@ The init wizard refuses to complete until every external check passes.
    - `drivesFrom`: array of comment IDs
    - `status`: `proposed`
 
-4. Update state.json with the new themes and plan. Construct the JSON payload and pipe it through `update-plan.ts`:
+4. Update state.json with the new themes and plan. Both are written via dedicated CLIs that take stdin:
 
    ```bash
+   echo '<THEMES_JSON>' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/set-themes.ts
    echo '{"action":"set","items":[ ... ]}' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/update-plan.ts
    ```
 
-   For themes, you can write them directly via a small tsx inline (no dedicated CLI):
-
-   ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/state.js').then(m => { const s = m.loadState('feedback/state.json'); s.rounds[String(s.currentRound)].themes = <THEMES_JSON>; m.writeState('feedback/state.json', s); })"
-   ```
+   Where `<THEMES_JSON>` is a JSON array of `{name, commentIds, summary}` objects, and the update-plan payload's `items` is a JSON array of `{id, themeName, change, drivesFrom, status: 'proposed'}` objects.
 
 5. Regenerate snapshot.
 6. Mark task complete. Advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts plan-approval`. Continue at `plan-approval`.
