@@ -114,3 +114,42 @@ export function filterCommentsByFrameIds(
 ): FigmaComment[] {
   return comments.filter((c) => c.nodeId !== null && allowed.has(c.nodeId));
 }
+
+export interface MeResponse {
+  handle: string;
+  email?: string;
+}
+
+export async function getMe(args: { token: string }): Promise<MeResponse> {
+  const res = await fetch(`${FIGMA_API_BASE}/v1/me`, {
+    headers: { 'X-Figma-Token': args.token },
+  });
+  if (res.status === 401) {
+    throw new Error('Figma 401 — token rejected. Generate or refresh at https://www.figma.com/developers/api#access-tokens');
+  }
+  if (!res.ok) {
+    throw new Error(`Figma /v1/me failed (${res.status}): ${await res.text()}`);
+  }
+  return (await res.json()) as MeResponse;
+}
+
+export interface FileResponse {
+  name: string;
+  lastModified?: string;
+}
+
+export async function getFile(args: { fileKey: string; token: string }): Promise<FileResponse> {
+  const res = await fetch(`${FIGMA_API_BASE}/v1/files/${args.fileKey}`, {
+    headers: { 'X-Figma-Token': args.token },
+  });
+  if (res.status === 403) {
+    throw new Error(`Figma 403 — you do not have access to file ${args.fileKey}. Confirm the URL and that the token's user has edit permission.`);
+  }
+  if (res.status === 404) {
+    throw new Error(`Figma 404 — file ${args.fileKey} not found. Confirm the URL you pasted.`);
+  }
+  if (!res.ok) {
+    throw new Error(`Figma /v1/files/${args.fileKey} failed (${res.status}): ${await res.text()}`);
+  }
+  return (await res.json()) as FileResponse;
+}

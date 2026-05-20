@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { uploadImage, fetchComments, filterCommentsByFrameIds } from '../src/figma-client.js';
+import { uploadImage, fetchComments, filterCommentsByFrameIds, getMe, getFile } from '../src/figma-client.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readFixture = (name: string) =>
@@ -201,5 +201,70 @@ describe('filterCommentsByFrameIds', () => {
   it('excludes comments with null nodeId', () => {
     const out = filterCommentsByFrameIds(sample, new Set(['1:42', '1:43', '9:99']));
     expect(out.map((c) => c.id)).toEqual(['1', '2', '3']);
+  });
+});
+
+describe('getMe', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns the authenticated user handle on 200', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ handle: 'sarah', email: 'sarah@example.com' }),
+    });
+    const me = await getMe({ token: 'figd_abc' });
+    expect(me.handle).toBe('sarah');
+  });
+
+  it('throws a token-specific error on 401', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: async () => 'Invalid token',
+    });
+    await expect(getMe({ token: 'figd_bad' })).rejects.toThrow(/401|token/i);
+  });
+});
+
+describe('getFile', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns the file metadata on 200', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ name: 'My File', lastModified: '2026-05-01T00:00:00Z' }),
+    });
+    const file = await getFile({ fileKey: 'abc123', token: 'figd_abc' });
+    expect(file.name).toBe('My File');
+  });
+
+  it('throws a clearly distinct error on 403 (no access)', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      text: async () => 'Forbidden',
+    });
+    await expect(getFile({ fileKey: 'abc', token: 'figd_x' })).rejects.toThrow(/403|access/i);
+  });
+
+  it('throws a clearly distinct error on 404 (not found)', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: async () => 'Not Found',
+    });
+    await expect(getFile({ fileKey: 'nope', token: 'figd_x' })).rejects.toThrow(/404|not found/i);
   });
 });
