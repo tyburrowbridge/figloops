@@ -15,10 +15,11 @@ Stakeholder feedback loops for localhost prototypes.
   → <next-action>
 
 COMMANDS
-  :next     Advance the round to the next phase or gate
-  :status   Show round tracker without advancing
-  :init     One-time project setup
-  :help     This screen
+  :next      Advance the round to the next phase or gate
+  :status    Show round tracker without advancing
+  :feedback  Show all stakeholder feedback to date (grouped by round)
+  :init      One-time project setup
+  :help      This screen
 ````
 
 Phase → next-action phrase:
@@ -43,10 +44,11 @@ Stakeholder feedback loops for localhost prototypes.
   → Run /figloops:init to set up
 
 COMMANDS
-  :init     One-time project setup wizard
-  :next     Advance the round (after init)
-  :status   Show round tracker
-  :help     This screen
+  :init      One-time project setup wizard
+  :next      Advance the round (after init)
+  :status    Show round tracker
+  :feedback  Show all stakeholder feedback to date
+  :help      This screen
 
 Requires: Figma MCP connected, Figma PAT
 ````

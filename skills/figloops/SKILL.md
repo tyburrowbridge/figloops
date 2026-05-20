@@ -169,7 +169,13 @@ The init wizard refuses to complete until every external check passes.
 
    Parse stdout: `{ round, uploads: [{label, filename, imageHash}], failed: [] }`. If `uploads` is empty, abort and surface the error.
 3. Read `figloops.config.json` to get `figma.fileKey` and `viewport.width`.
-4. Call the Figma MCP to find or create the page named `Round <round>` in `<fileKey>`. Capture the returned `pageId`.
+4. Compute a human-readable timestamp for the page name. Run:
+
+   ```bash
+   date '+%-d %B %Y (%-I:%M %p)'
+   ```
+
+   Capture stdout (e.g., `20 May 2026 (2:30 PM)`). Construct the page name as `Round <round> — <timestamp>` (em dash separator). Call the Figma MCP to find or create the page with that name in `<fileKey>`. Capture the returned `pageId`. Note: if push is re-run minutes after a first attempt, the new timestamp won't match the existing page, and a duplicate `Round <round> — <new timestamp>` page will be created. The user can delete the orphan manually.
 5. For each upload (preserve order):
    - Compute grid position: `col = i % 3`, `row = floor(i / 3)`. Frame x: `col * (viewport.width + 40)`. Frame y: `row * 1000` (provisional — actual image heights unknown until MCP returns).
    - Frame name: `<NN> - <label>` (2-digit one-indexed).

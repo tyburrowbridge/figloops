@@ -54,6 +54,7 @@ You'll mostly only use `:next`.
 | `/figloops:init` | One-time project setup wizard. |
 | `/figloops:next` | Workhorse — runs the current phase, stops at the next gate. |
 | `/figloops:status` | Read-only view of the round tracker. |
+| `/figloops:feedback` | Show all stakeholder feedback to date, grouped by round and frame. |
 | `/figloops:help` | Lists commands and shows where you are. |
 
 ---
