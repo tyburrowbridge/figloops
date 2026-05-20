@@ -1,117 +1,74 @@
+// Formats a per-round changelog markdown block from state.json's plan items.
+// Used by the skill in the `close` phase: output is written via MCP to a
+// text frame on the Changelog page in Figma.
+import { join } from 'node:path';
+import { loadState, currentRoundData, type Comment, type PlanItem, type RoundData } from '../src/state.js';
+
 export interface FormatChangelogArgs {
   fromRound: number;
   toRound: number;
   date: string;
-  plan: string;
-  addressed: string;
+  round: RoundData;
 }
 
-interface PlanItem {
-  text: string;
-  drivers: string;
-  theme: string;
-}
-
-function parsePlan(plan: string): PlanItem[] {
-  const items: PlanItem[] = [];
-  let currentTheme = '';
-  const lines = plan.split('\n');
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const themeMatch = line.match(/^###\s+Theme:\s*(.+?)\s*$/);
-    if (themeMatch) {
-      currentTheme = themeMatch[1];
-      continue;
-    }
-    const itemMatch = line.match(/^\d+\.\s*\[[ x]\]\s*(.+?)\s*$/);
-    if (itemMatch && currentTheme) {
-      const text = itemMatch[1];
-      const next = lines[i + 1] ?? '';
-      const driverMatch = next.match(/^\s*Drives from:\s*(.+?)\s*$/);
-      items.push({
-        text,
-        drivers: driverMatch ? driverMatch[1] : '',
-        theme: currentTheme,
-      });
-    }
-  }
-  return items;
-}
-
-function parseAddressed(addressed: string): string[] {
-  return addressed
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith('- '))
-    .map((l) => l.slice(2).trim());
-}
-
-function normalizeForMatch(s: string): string {
-  // Remove common verbs (both base and past tense) at the start
-  return s
-    .toLowerCase()
-    .replace(/^(add|added|increase|increased|move|moved|update|updated|fix|fixed|improve|improved|enhance|enhanced|create|created|remove|removed|change|changed)\s+/i, '')
-    .replace(/[.,]/g, '')
-    .trim();
+function cite(comments: Comment[], ids: string[]): string {
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  return ids
+    .map((id) => {
+      const c = byId.get(id);
+      return c ? `${c.authorName} (#${id})` : `#${id}`;
+    })
+    .join(', ');
 }
 
 export function formatChangelog(args: FormatChangelogArgs): string {
-  const planItems = parsePlan(args.plan);
-  const addressedLines = parseAddressed(args.addressed);
-  const header = `## Round ${args.fromRound} → Round ${args.toRound} (${args.date})`;
-
-  if (addressedLines.length === 0) {
+  const { fromRound, toRound, date, round } = args;
+  const header = `## Round ${fromRound} → Round ${toRound} (${date})`;
+  if (round.plan.length === 0) {
     return `${header}\n\n_No changes implemented this round._\n`;
   }
-
-  // Group addressed lines by matching theme via plan items.
-  const byTheme = new Map<string, string[]>();
-
-  for (const addr of addressedLines) {
-    const addrNorm = normalizeForMatch(addr);
-    const match = planItems.find((p) => addrNorm.includes(normalizeForMatch(p.text)));
-    const theme = match?.theme ?? 'Other';
-    if (!byTheme.has(theme)) byTheme.set(theme, []);
-    byTheme.get(theme)!.push(addr);
+  const shipped = round.plan.filter((p) => p.status === 'shipped');
+  if (shipped.length === 0) {
+    return `${header}\n\n_Round ${fromRound} → Round ${toRound}: feedback not actionable this round._\n`;
   }
 
-  const parts = [header, ''];
-  for (const [theme, lines] of byTheme) {
+  const byTheme = new Map<string, PlanItem[]>();
+  for (const item of shipped) {
+    const list = byTheme.get(item.themeName) ?? [];
+    list.push(item);
+    byTheme.set(item.themeName, list);
+  }
+
+  const parts: string[] = [header, ''];
+  for (const [theme, items] of byTheme) {
     parts.push(`### Theme: ${theme}`);
-    for (const line of lines) {
-      const driveMatch = line.match(/(.+?)\s*Drove from:\s*(.+)$/);
-      if (driveMatch) {
-        parts.push(`- ${driveMatch[1].trim()}`);
-        parts.push(`  Drove from: ${driveMatch[2].trim()}`);
-      } else {
-        parts.push(`- ${line}`);
-      }
+    for (const item of items) {
+      parts.push(`- ${item.change}`);
+      parts.push(`  Drove from: ${cite(round.comments, item.drivesFrom)}`);
     }
     parts.push('');
   }
   return parts.join('\n').trimEnd() + '\n';
 }
 
-// CLI entry point: called by /figma-feedback-close-round.
-// Usage: tsx scripts/format-changelog.ts <fromRound> <toRound> <date> <planPath> <addressedPath>
+// CLI entry point: the skill invokes this during the close phase.
+// Usage: tsx scripts/format-changelog.ts <fromRound> <toRound> <date>
+//   Reads from feedback/state.json. <fromRound> must equal state.currentRound.
 async function main() {
-  const [fromRound, toRound, date, planPath, addressedPath] = process.argv.slice(2);
-  if (!fromRound || !toRound || !date || !planPath || !addressedPath) {
-    process.stderr.write(
-      'Usage: tsx scripts/format-changelog.ts <fromRound> <toRound> <date> <planPath> <addressedPath>\n',
-    );
+  const [fromRound, toRound, date] = process.argv.slice(2);
+  if (!fromRound || !toRound || !date) {
+    process.stderr.write('Usage: tsx scripts/format-changelog.ts <fromRound> <toRound> <date>\n');
     process.exit(1);
   }
-  const { readFileSync } = await import('node:fs');
+  const cwd = process.cwd();
+  const state = loadState(join(cwd, 'feedback', 'state.json'));
+  if (Number(fromRound) !== state.currentRound) {
+    process.stderr.write(`fromRound (${fromRound}) does not match state.currentRound (${state.currentRound})\n`);
+    process.exit(1);
+  }
+  const round = currentRoundData(state);
   process.stdout.write(
-    formatChangelog({
-      fromRound: Number(fromRound),
-      toRound: Number(toRound),
-      date,
-      plan: readFileSync(planPath, 'utf8'),
-      addressed: readFileSync(addressedPath, 'utf8'),
-    }),
+    formatChangelog({ fromRound: Number(fromRound), toRound: Number(toRound), date, round }),
   );
 }
 

@@ -49,7 +49,9 @@ describe('capture (integration)', () => {
 
       expect(result.captures).toHaveLength(2);
       expect(result.captures[0].path).toMatch(/01-login\.png$/);
+      expect(result.captures[0].filename).toBe('01-login.png');
       expect(result.captures[1].path).toMatch(/02-dashboard\.png$/);
+      expect(result.captures[1].filename).toBe('02-dashboard.png');
 
       for (const c of result.captures) {
         expect(statSync(c.path).size).toBeGreaterThan(0);

@@ -1,5 +1,5 @@
 {
-  "name": "figma-feedback-plugin",
-  "version": "0.1.3",
-  "description": "Capture localhost prototypes into Figma for stakeholder review; ingest comments and propose change plans."
+  "name": "figloops",
+  "version": "1.0.0",
+  "description": "Wizard-driven stakeholder feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans."
 }

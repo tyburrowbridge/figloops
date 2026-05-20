@@ -1,23 +1,54 @@
 ---
-description: List all figma-feedback-plugin commands with brief descriptions
+description: List figloops commands and show "you are here" if a round is in progress
 ---
 
-Print the following to the user as the entire response. Do not call any tools. Do not invoke any skill.
+Read `feedback/state.json` in the current working directory if it exists.
 
-# figma-feedback-plugin commands
+**If the file exists**, parse `currentRound` and `currentPhase`, then print the following (replace `<round>` and `<phase>` with the values; for `<next-action>` use the phrase appropriate to the phase — see table below). Do not call any other tools.
 
-**First time?** Run `/figma-feedback-plugin:init` in the repo where your dev server runs.
+````
+figloops
+Stakeholder feedback loops for localhost prototypes.
 
-| Command | What it does |
-|---|---|
-| `/figma-feedback-plugin:help` | This list. |
-| `/figma-feedback-plugin:init` | One-time setup. Verifies the Figma MCP is connected, writes `figma-feedback.config.json` and `.env.example`, initializes the round counter. |
-| `/figma-feedback-plugin:capture [routes…]` | Runs Playwright over the configured routes (or just the ones you name) and saves PNGs into `feedback/round-N/captures/`. Then asks you to approve before pushing. |
-| `/figma-feedback-plugin:push` | Uploads captured PNGs to Figma and asks the Figma MCP to create a `Round N` page with one frame per capture in a 3-column grid. Writes `push-manifest.json`. |
-| `/figma-feedback-plugin:pull` | Pulls stakeholder comments from Figma for the current round's frames; writes `comments.json`. |
-| `/figma-feedback-plugin:plan` | Clusters comments by inferred theme; writes `themes.md` and `plan.md` for you to review/edit. |
-| `/figma-feedback-plugin:close-round` | Reads your `plan.md` + `addressed.md`, writes a per-round summary to the Figma `Changelog` page, and bumps the round counter. |
+  CURRENT
+  Round <round> · phase: <phase>
+  → <next-action>
 
-Workflow: `init` → `capture` → `push` → *(stakeholders comment)* → `pull` → `plan` → *(you implement changes)* → `close-round` → loop back to `capture`.
+COMMANDS
+  :next     Advance the round to the next phase or gate
+  :status   Show round tracker without advancing
+  :init     One-time project setup
+  :help     This screen
+````
 
-See the README at the plugin install location for setup details (Figma MCP install, Figma Personal Access Token, JSON Schema editor support).
+Phase → next-action phrase:
+- `capture` → "Run /figloops:next to capture screenshots"
+- `push` → "Run /figloops:next to push captures to Figma"
+- `await-comments` → "Run /figloops:next when stakeholders respond"
+- `pull` → "Run /figloops:next to fetch comments"
+- `comment-review` → "Run /figloops:next to advance after reviewing comments"
+- `cluster` → "Run /figloops:next to cluster comments by theme"
+- `plan-approval` → "Run /figloops:next to review and approve the plan"
+- `implement` → "Run /figloops:next to track implementation progress"
+- `close` → "Run /figloops:next to close the round and write the changelog"
+
+**If `feedback/state.json` does not exist**, print this instead:
+
+````
+figloops
+Stakeholder feedback loops for localhost prototypes.
+
+  NOT INITIALIZED
+  No figloops.config.json in this project.
+  → Run /figloops:init to set up
+
+COMMANDS
+  :init     One-time project setup wizard
+  :next     Advance the round (after init)
+  :status   Show round tracker
+  :help     This screen
+
+Requires: Figma MCP connected, Figma PAT
+````
+
+Do not invoke any skill, do not call any other tools, and do not add any text outside of the rendered help screen.
