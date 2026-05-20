@@ -18,6 +18,7 @@ COMMANDS
   :next      Advance the round to the next phase or gate
   :status    Show round tracker without advancing
   :feedback  Show all stakeholder feedback to date (grouped by round)
+  :themes    Show all clustered themes to date (grouped by round)
   :init      One-time project setup
   :help      This screen
 ````
@@ -48,6 +49,7 @@ COMMANDS
   :next      Advance the round (after init)
   :status    Show round tracker
   :feedback  Show all stakeholder feedback to date
+  :themes    Show all clustered themes to date
   :help      This screen
 
 Requires: Figma MCP connected, Figma PAT
