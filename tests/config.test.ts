@@ -59,7 +59,7 @@ describe('loadConfig', () => {
 
   it('loads and validates a valid config file', () => {
     const data = readFixture('valid-config.json');
-    const path = join(dir, 'figma-feedback.config.json');
+    const path = join(dir, 'figloops.config.json');
     writeFileSync(path, JSON.stringify(data));
     const cfg = loadConfig(path);
     expect(cfg.routes).toHaveLength(2);

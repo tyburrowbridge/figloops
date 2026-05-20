@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "figma-feedback.config.json",
+  "title": "figloops.config.json",
   "type": "object",
   "required": ["devServer", "viewport", "figma", "routes"],
   "properties": {

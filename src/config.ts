@@ -1,3 +1,5 @@
+// Zod schema + loader for figloops.config.json (consuming repo).
+// Validates devServer, viewport, figma file key + changelog page name, routes.
 import { z } from 'zod';
 import { readFileSync } from 'node:fs';
 
