@@ -162,9 +162,10 @@ describe('fetchComments', () => {
       id: '12345',
       message: 'Make this button bigger',
       nodeId: '1:42',
-      author: 'Sarah',
+      authorName: 'Sarah',
       resolved: false,
     });
+    expect(comments[0].authorHandle).toBeTruthy();
     expect(comments[2].resolved).toBe(true);
   });
 
@@ -183,10 +184,10 @@ describe('fetchComments', () => {
 
 describe('filterCommentsByFrameIds', () => {
   const sample: any[] = [
-    { id: '1', nodeId: '1:42', message: 'a', author: 'A', createdAt: 't1', resolved: false },
-    { id: '2', nodeId: '1:43', message: 'b', author: 'B', createdAt: 't2', resolved: false },
-    { id: '3', nodeId: '9:99', message: 'c', author: 'C', createdAt: 't3', resolved: false },
-    { id: '4', nodeId: null,   message: 'd', author: 'D', createdAt: 't4', resolved: false },
+    { id: '1', nodeId: '1:42', message: 'a', authorName: 'A', authorHandle: 'A', createdAt: 't1', resolved: false },
+    { id: '2', nodeId: '1:43', message: 'b', authorName: 'B', authorHandle: 'B', createdAt: 't2', resolved: false },
+    { id: '3', nodeId: '9:99', message: 'c', authorName: 'C', authorHandle: 'C', createdAt: 't3', resolved: false },
+    { id: '4', nodeId: null,   message: 'd', authorName: 'D', authorHandle: 'D', createdAt: 't4', resolved: false },
   ];
 
   it('returns only comments whose nodeId is in the allow set', () => {

@@ -64,7 +64,8 @@ export interface FigmaComment {
   id: string;
   message: string;
   nodeId: string | null;
-  author: string;
+  authorName: string;
+  authorHandle: string;
   createdAt: string;
   resolved: boolean;
 }
@@ -74,7 +75,7 @@ interface RawCommentsResponse {
     id: string;
     message: string;
     client_meta?: { node_id?: string };
-    user: { handle: string };
+    user: { handle: string; id?: string };
     created_at: string;
     resolved_at: string | null;
   }>;
@@ -102,7 +103,11 @@ export async function fetchComments(args: FetchCommentsArgs): Promise<FigmaComme
     id: c.id,
     message: c.message,
     nodeId: c.client_meta?.node_id ?? null,
-    author: c.user.handle,
+    // Figma's REST returns the display name in `user.handle`.
+    // We expose both authorName (display) and authorHandle (with @ prefix when available)
+    // for symmetry with the state schema; they are the same source for now.
+    authorName: c.user.handle,
+    authorHandle: c.user.id ? `@${c.user.id}` : c.user.handle,
     createdAt: c.created_at,
     resolved: c.resolved_at !== null,
   }));

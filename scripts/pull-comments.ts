@@ -1,15 +1,8 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { loadConfig } from '../src/config.js';
-import { readRoundState } from '../src/round-state.js';
-import { fetchComments, filterCommentsByFrameIds, type FigmaComment } from '../src/figma-client.js';
-
-interface PushManifest {
-  round: number;
-  page_id: string;
-  frames: Array<{ label: string; frame_id: string; image_hash: string }>;
-}
+import { loadState, writeState, currentRoundData, type Comment } from '../src/state.js';
+import { fetchComments, filterCommentsByFrameIds } from '../src/figma-client.js';
 
 async function main() {
   loadEnv();
@@ -20,33 +13,33 @@ async function main() {
   }
 
   const cwd = process.cwd();
-  const config = loadConfig(join(cwd, 'figma-feedback.config.json'));
-  const state = readRoundState(join(cwd, 'feedback', '.round-state.json'));
-  const roundDir = join(cwd, 'feedback', `round-${state.currentRound}`);
-  const manifestPath = join(roundDir, 'push-manifest.json');
+  const config = loadConfig(join(cwd, 'figloops.config.json'));
+  const statePath = join(cwd, 'feedback', 'state.json');
+  const state = loadState(statePath);
+  const round = currentRoundData(state);
 
-  if (!existsSync(manifestPath)) {
-    process.stderr.write(
-      `No push-manifest.json at ${manifestPath}. Run /figma-feedback-push first.\n`,
-    );
+  if (!round.pushManifest) {
+    process.stderr.write('No pushManifest in state for current round. Run /figloops:next through push first.\n');
     process.exit(1);
   }
-
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as PushManifest;
-  const allowedFrameIds = new Set(manifest.frames.map((f) => f.frame_id));
+  const allowedFrameIds = new Set(round.pushManifest.frames.map((f) => f.frameId));
+  const frameById = new Map(round.pushManifest.frames.map((f) => [f.frameId, f.label]));
 
   const all = await fetchComments({ fileKey: config.figma.fileKey, token });
   const filtered = filterCommentsByFrameIds(all, allowedFrameIds);
 
-  // Attach the frame label to each comment for downstream readability
-  const frameById = new Map(manifest.frames.map((f) => [f.frame_id, f.label]));
-  const enriched = filtered.map((c) => ({
-    ...c,
-    frame_label: c.nodeId ? frameById.get(c.nodeId) ?? null : null,
+  const enriched: Comment[] = filtered.map((c) => ({
+    id: c.id,
+    frameLabel: c.nodeId ? frameById.get(c.nodeId) ?? null : null,
+    authorName: c.authorName,
+    authorHandle: c.authorHandle,
+    message: c.message,
+    createdAt: c.createdAt,
+    resolved: c.resolved,
   }));
 
-  const outPath = join(roundDir, 'comments.json');
-  writeFileSync(outPath, JSON.stringify(enriched, null, 2) + '\n');
+  round.comments = enriched;
+  writeState(statePath, state);
 
   process.stdout.write(
     JSON.stringify(
@@ -54,7 +47,6 @@ async function main() {
         round: state.currentRound,
         totalComments: all.length,
         forThisRound: enriched.length,
-        wroteTo: outPath,
       },
       null,
       2,
