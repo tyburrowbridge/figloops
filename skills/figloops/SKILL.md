@@ -37,40 +37,133 @@ The init wizard refuses to complete until every external check passes.
 
 1. **MCP preflight** (above). On failure, abort here.
 
-2. **Suggest a fresh Figma file** (passive tip; do not block):
+2. **Create the setup checklist.** Call `TaskCreate` 5 times in a single message (all `pending`) so the user can track wizard progress:
+   - `[figloops setup] Verify Figma MCP`
+   - `[figloops setup] Authenticate with Figma`
+   - `[figloops setup] Connect Figma file`
+   - `[figloops setup] Configure project settings`
+   - `[figloops setup] Initialize figloops`
 
-   > Recommended — create a fresh Figma file for this project before continuing. You'll get a clean slate per project and avoid polluting an existing design file.
+   Immediately mark `[figloops setup] Verify Figma MCP` as `completed` (MCP preflight already passed).
 
-3. **Determine `<PLUGIN_DIR>`.** It is this skill's parent directory's parent (i.e., `.../figloops`). If the user hasn't already set `FIGLOOPS_PLUGIN_DIR`, print the absolute path and tell the user you'll write it into `.env` in a later step.
+3. **Figma file readiness check.** Use `AskUserQuestion`:
 
-4. **Figma PAT validation.** Ask the user for their Figma Personal Access Token (link: https://www.figma.com/developers/api#access-tokens). If they already have one in `.env`, read it. Validate by calling:
+   ```
+   question: "Do you have a Figma file ready for this project?"
+   header: "Figma file"
+   options:
+     - label: "Yes — I have a file ready"
+       description: "You'll paste the URL in the next step."
+     - label: "No — I need to create one first"
+       description: "Open Figma, create a fresh dedicated file, then re-run /figloops:init."
+   ```
+
+   - If **"No"**: print `Open Figma, create a new file, then re-run /figloops:init.` and abort.
+   - If **"Yes"**: continue.
+
+4. **Determine `<PLUGIN_DIR>`.** It is this skill's parent directory's parent (i.e., `.../figloops`). If `FIGLOOPS_PLUGIN_DIR` is not already set, print the resolved absolute path and tell the user you'll write it into `.env` later.
+
+5. **Figma PAT validation.** Mark `[figloops setup] Authenticate with Figma` as `in_progress`.
+
+   **5a. Upfront check — look for an existing token before asking anything:**
+   - Check `process.env.FIGMA_TOKEN` (shell environment).
+   - If not in shell env, check if `.env` exists in cwd and contains a `FIGMA_TOKEN=` line; extract the value.
+   - If a token is found either way, silently validate it (step 5c below). On success, tell the user: `"Found an existing FIGMA_TOKEN — validated successfully."` Mark `[figloops setup] Authenticate with Figma` as `completed` and skip to step 6.
+   - On validation failure, tell the user the token is invalid and continue to step 5b.
+
+   **5b. If no valid token was found, use `AskUserQuestion`:**
+
+   ```
+   question: "How would you like to set up your Figma Personal Access Token?"
+   header: "Figma PAT"
+   options:
+     - label: "I already have one — I'll paste it now"
+       description: "You have a PAT from a previous project. Paste it and figloops will validate it."
+     - label: "I need to create one"
+       description: "Use 'Read and write' scope for files and comments. Re-run /figloops:init when done."
+     - label: "It's already in my shell / .env"
+       description: "figloops will read FIGMA_TOKEN from your environment right now."
+   ```
+
+   - **"I already have one"**: prompt them to paste the token as plain text in their next message.
+   - **"I need to create one"**: print `https://www.figma.com/developers/api#access-tokens` with scope instructions, then abort. Tell them to re-run `/figloops:init` when they have the token.
+   - **"It's already in my shell / .env"**: re-run step 5a. If still not found, tell them the variable name to set and abort.
+
+   **5c. Validate the token** (whichever source provided it):
 
    ```bash
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getMe({ token: process.env.FIGMA_TOKEN }).then(me => console.log(JSON.stringify(me)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
-   (Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet.) On failure (401 / network), abort init with the error message + PAT setup link.
+   Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet. On failure (401 / network), abort init with the error message + `https://www.figma.com/developers/api#access-tokens`. On success, mark `[figloops setup] Authenticate with Figma` as `completed`.
 
-5. **Figma file URL validation.** Ask the user for their Figma file URL. Accept any of:
+6. **Figma file URL validation.** Mark `[figloops setup] Connect Figma file` as `in_progress`. Ask the user to paste their Figma file URL. Accept any of:
    - `https://www.figma.com/file/<KEY>/<NAME>`
    - `https://www.figma.com/design/<KEY>/<NAME>`
    - `https://www.figma.com/proto/<KEY>/<NAME>`
 
-   Extract the file key (the segment between `/file/`, `/design/`, or `/proto/` and the next `/`). Validate access:
+   Extract the file key (segment after `/file/`, `/design/`, or `/proto/`). Validate access:
 
    ```bash
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getFile({ fileKey: '<KEY>', token: process.env.FIGMA_TOKEN }).then(f => console.log(JSON.stringify(f)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
-   On 403/404, abort with the explicit reason (the script prints the right message already) and re-prompt for a corrected URL.
+   On 403/404, surface the error and re-prompt for a corrected URL. On success, mark `[figloops setup] Connect Figma file` as `completed`.
 
-6. **Project config.** Ask for:
-   - Dev server URL (default offer: `http://localhost:3000`)
-   - Viewport (default: 1440×900) — confirm or take overrides
-   - Changelog page name (default: `Changelog`)
-   - Starter routes — require at least 1 `{label, path}` pair; encourage 2+
+7. **Project config.** Mark `[figloops setup] Configure project settings` as `in_progress`. Collect settings in this order using `AskUserQuestion` for each:
 
-7. **Write `figloops.config.json`** in the cwd:
+   **7a. Dev server URL** — use `AskUserQuestion`:
+   ```
+   question: "What URL is your dev server running on?"
+   header: "Dev server"
+   options:
+     - label: "http://localhost:3000"
+       description: "Create React App, Next.js default, Rails"
+     - label: "http://localhost:5173"
+       description: "Vite default"
+     - label: "http://localhost:8080"
+       description: "Vue CLI, webpack-dev-server"
+     - label: "http://localhost:4200"
+       description: "Angular CLI"
+   ```
+   The "Other" option (auto-provided) lets the user type a custom URL.
+
+   **7b. Viewport** — use `AskUserQuestion`:
+   ```
+   question: "What viewport size should figloops capture at?"
+   header: "Viewport"
+   options:
+     - label: "1440 × 900  (Recommended)"
+       description: "Standard widescreen laptop — good default for most web apps."
+     - label: "1920 × 1080"
+       description: "Full HD / large desktop monitor."
+     - label: "1280 × 800"
+       description: "Smaller laptop screen."
+     - label: "390 × 844"
+       description: "iPhone 14 / mobile portrait."
+   ```
+   The "Other" option lets the user type `width x height` (parse both formats: `1440x900` or `1440 x 900`).
+
+   **7c. Changelog page name** — use `AskUserQuestion`:
+   ```
+   question: "What should the Figma changelog page be called?"
+   header: "Changelog page"
+   options:
+     - label: "Changelog  (Recommended)"
+       description: "figloops will write round summaries to a page named 'Changelog'."
+     - label: "Something else"
+       description: "Type a custom page name."
+   ```
+   If **"Something else"**: prompt for the name as plain text.
+
+   **7d. Starter routes** — this is free-form; ask in plain text. Require at least 1 `{label, path}` pair; encourage 2+. Example prompt:
+   > List the routes you want figloops to capture. Give each a short label and a path, one per line:
+   > `Dashboard  /dashboard`
+   > `Login      /login`
+
+   Mark `[figloops setup] Configure project settings` as `completed` once all four are collected.
+
+8. **Write `figloops.config.json`** in the cwd:
 
    ```json
    {
@@ -82,20 +175,22 @@ The init wizard refuses to complete until every external check passes.
    }
    ```
 
-8. **Write `.env`** (do NOT overwrite if it exists — instead print the keys the user should add manually):
+9. **Write `.env`** (do NOT overwrite if it exists — instead print the keys the user should add manually):
 
    ```
-   FIGMA_TOKEN=<token from step 4>
+   FIGMA_TOKEN=<token from step 5>
    FIGLOOPS_PLUGIN_DIR=<PLUGIN_DIR>
    ```
 
-9. **Initialize state.** Run:
+10. **Initialize state.** Mark `[figloops setup] Initialize figloops` as `in_progress`. Run:
 
-   ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
-   ```
+    ```bash
+    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
+    ```
 
-10. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
+    Mark `[figloops setup] Initialize figloops` as `completed`.
+
+11. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
     - `[figloops] Capture screenshots`
     - `[figloops] Push to Figma`
     - `[figloops] Wait for stakeholder comments`
@@ -106,7 +201,7 @@ The init wizard refuses to complete until every external check passes.
     - `[figloops] Implement changes`
     - `[figloops] Close round`
 
-11. **Print the "ready" summary** to the user:
+12. **Print the "ready" summary** to the user:
 
     > Setup complete. Round 1 is ready to begin. Run `/figloops:next` to capture screenshots of your configured routes.
 

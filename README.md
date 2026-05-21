@@ -22,10 +22,13 @@ If any of these are missing, `/figloops:init` will refuse to complete and tell y
 
 ## Install
 
-In Claude Code:
+In Claude Code, run these **one at a time**:
 
 ```
 /plugin marketplace add tyburrowbridge/figloops
+```
+
+```
 /plugin install figloops@figloops
 ```
 
