@@ -1,6 +1,10 @@
-# figloops
+<p align="center">
+  <img src="./assets/logo.svg" alt="figloops" width="700"/>
+</p>
 
-Wizard-driven stakeholder feedback loops for localhost prototypes — built as a Claude Code plugin.
+<p align="center">
+  Wizard-driven stakeholder feedback loops for localhost prototypes — built as a Claude Code plugin.
+</p>
 
 Capture your routes into Figma, ingest the comments stakeholders leave, get a per-round change plan, ship the changes, and write a per-round changelog back into Figma — all from one slash command.
 
