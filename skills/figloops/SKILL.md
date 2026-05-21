@@ -446,15 +446,26 @@ The init wizard refuses to complete until every external check passes.
    Frame "02 - Dashboard":
      - Sarah Lee (#23): "Nav doesn't show what's active."
 
-   Reply with one of:
-     continue           (advance to clustering)
-     pull-again         (re-fetch comments from Figma, e.g. more arrived)
-     cancel             (abort the round; state reverts to await-comments)
+   Your Figma file: <URL>
    ```
 
-3. On `continue`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts cluster`. Continue at `cluster` handler.
-4. On `pull-again`: re-run pull-comments script, regenerate snapshot, re-render the comment list, stay in this phase.
-5. On `cancel`: advance back to `await-comments`: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts await-comments`. Stop.
+3. Use `AskUserQuestion`:
+
+   ```
+   question: "How do you want to proceed with these comments?"
+   header: "Review comments"
+   options:
+     - label: "Continue to clustering  (Recommended)"
+       description: "You've read everything you need. Advance to clustering themes."
+     - label: "Pull again"
+       description: "Re-fetch from Figma in case more comments arrived since the last pull."
+     - label: "Cancel round"
+       description: "Abort the round; state reverts to await-comments so you can re-run /figloops:next later."
+   ```
+
+4. On `"Continue to clustering"`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts cluster`. Continue at `cluster` handler.
+5. On `"Pull again"`: re-run pull-comments script, regenerate snapshot, re-render the comment list, ask again with the same 3 options.
+6. On `"Cancel round"`: advance back to `await-comments`: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts await-comments`. Stop.
 
 ### Phase handler: `cluster`
 
