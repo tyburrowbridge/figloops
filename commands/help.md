@@ -34,10 +34,16 @@ Phase → next-action phrase:
 - `implement` → "Run /figloops:next to track implementation progress"
 - `close` → "Run /figloops:next to close the round and write the changelog"
 
-**If `feedback/state.json` does not exist**, print this instead:
+**If `feedback/state.json` does not exist**, print this instead (banner included — this is the welcome screen for users who haven't initialized yet):
 
 ````
-figloops
+███████╗██╗ ██████╗ ██╗      ██████╗  ██████╗ ██████╗ ███████╗
+██╔════╝██║██╔════╝ ██║     ██╔═══██╗██╔═══██╗██╔══██╗██╔════╝
+█████╗  ██║██║  ███╗██║     ██║   ██║██║   ██║██████╔╝███████╗
+██╔══╝  ██║██║   ██║██║     ██║   ██║██║   ██║██╔═══╝ ╚════██║
+██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
+╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
+
 Stakeholder feedback loops for localhost prototypes.
 
   NOT INITIALIZED

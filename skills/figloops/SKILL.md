@@ -35,6 +35,22 @@ Before any phase that touches Figma:
 
 The init wizard refuses to complete until every external check passes.
 
+0. **Welcome banner.** Print this exactly (inside a fenced code block so the box-drawing characters keep their spacing). This is the first thing the user sees after installing the plugin — show it before any tool calls.
+
+   ````
+   ```
+   ███████╗██╗ ██████╗ ██╗      ██████╗  ██████╗ ██████╗ ███████╗
+   ██╔════╝██║██╔════╝ ██║     ██╔═══██╗██╔═══██╗██╔══██╗██╔════╝
+   █████╗  ██║██║  ███╗██║     ██║   ██║██║   ██║██████╔╝███████╗
+   ██╔══╝  ██║██║   ██║██║     ██║   ██║██║   ██║██╔═══╝ ╚════██║
+   ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
+   ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
+
+   Welcome to figloops — stakeholder feedback loops for localhost prototypes.
+   Setting up your project now…
+   ```
+   ````
+
 1. **MCP preflight** (above). On failure, abort here.
 
 2. **Create the setup checklist.** Call `TaskCreate` 5 times in a single message (all `pending`) so the user can track wizard progress:
