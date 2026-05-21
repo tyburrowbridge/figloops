@@ -579,10 +579,19 @@ The init wizard refuses to complete until every external check passes.
    ```
 
 4. Apply the choice:
+
    - `"Approve all"`: build a status-update payload with every item `→ approved`.
-   - `"Approve some only"`: prompt as plain text — `"Which item numbers should be approved? (e.g. 1,3)"`. Parse comma-separated integers; mark those `→ approved`, all others `→ rejected`.
-   - `"Edit one"`: prompt as plain text — `"Which item number do you want to edit?"` then `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 options.
+
+   - `"Approve some only"`: pick the approved items.
+     - **If the plan has ≤4 items**, use `AskUserQuestion` with `multiSelect: true` and one option per item (label = `"<N>. <truncated change>"`, max ~60 chars; description = full change text). Items not selected are rejected. Require at least 1 selection.
+     - **If the plan has >4 items**, prompt as plain text — `"Which item numbers should be approved? (e.g. 1,3)"`. Parse comma-separated integers. Mark those `→ approved`, all others `→ rejected`.
+
+   - `"Edit one"`: pick the item to edit, then the new wording.
+     - **If the plan has ≤4 items**, use `AskUserQuestion` (single-select) with one option per item to pick which one. Otherwise prompt as plain text — `"Which item number do you want to edit?"` and parse the integer.
+     - Then prompt as plain text — `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 top-level options.
+
    - `"Reject all"`: status-update payload with every item `→ rejected`. Advance directly to `close` (skip implement).
+
 5. Apply the update via `update-plan.ts`. Regenerate snapshot.
 6. If any items are approved: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts implement`. Continue at `implement`.
 7. If `"Reject all"`: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
@@ -671,7 +680,11 @@ The init wizard refuses to complete until every external check passes.
    ```
 
 5. Apply the choice:
-   - `"Mark items as shipped"`: prompt as plain text — `"Which item numbers shipped? (e.g. 2 or 2,3)"`. Parse comma-separated integers; build a status-update payload marking those `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 options.
+   - `"Mark items as shipped"`: pick which items.
+     - Compute `notYetShipped`: the approved items whose status is not `shipped`.
+     - **If `notYetShipped.length` ≤ 4**, use `AskUserQuestion` with `multiSelect: true` and one option per remaining item (label = `"<N>. <truncated change>"`, max ~60 chars). Require at least 1 selection.
+     - **If `notYetShipped.length` > 4**, prompt as plain text — `"Which item numbers shipped? (e.g. 2 or 2,3)"`. Parse comma-separated integers.
+     - Build a status-update payload marking the selected items `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 top-level options.
    - `"Close round"`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
 6. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
 
