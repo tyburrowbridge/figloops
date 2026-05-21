@@ -202,17 +202,63 @@ The init wizard refuses to complete until every external check passes.
      /products/[id]
    ```
 
-   Then use `AskUserQuestion`:
+   **7d-iv. Optional: probe the dev server for stale routes.** Routes discovered from source can be dead code (orphaned files, abandoned features, behind a removed flag). If the dev server is running we can flag them. Use `AskUserQuestion`:
+
+   ```
+   question: "Is your dev server running at <URL>? Probing it now will flag routes that may be stale."
+   header: "Probe dev server"
+   options:
+     - label: "Yes — probe it"
+       description: "figloops will GET each discovered route and flag any that 404 or aren't linked from /."
+     - label: "Not running — skip"
+       description: "Continue with the source-only list. You can edit it now or re-run /figloops:init later."
+   ```
+
+   - **"Yes — probe it"**: build the stdin payload `{ "baseUrl": "<URL>", "routes": [{"label": "...", "path": "..."}, ...] }` from the discovered list, then run:
+
+     ```bash
+     echo '<PAYLOAD_JSON>' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/probe-routes.ts
+     ```
+
+     Parse stdout: `{ serverReachable, entryLinks, routes: [{label, path, status, reachable, linkedFromEntry, finalUrl?, error?}] }`.
+
+     - If `serverReachable === false`: print `"Couldn't reach <URL> — skipping probe. Start your dev server and re-run /figloops:init if you want stale-route detection."` and continue with the unannotated list.
+     - If `serverReachable === true`: re-render the list with annotations and a legend, **keeping all routes by default** (option A — warnings only, user decides what to drop in 7d-v):
+
+       ```
+       Probed <URL> — flagging possibly-stale routes:
+
+         /                ✓ 200    linked
+         /login           ✓ 200    linked
+         /dashboard       ✓ 200    linked
+         /reports         ⚠ 404    likely stale — keep anyway?
+         /admin           ✓ 200    not linked from /  (might be intentional)
+         /old-checkout    ✗ refused  unreachable — keep anyway?
+
+       Legend:
+         ✓ = 2xx/3xx, ⚠ = 404, ✗ = connection failed
+         "linked" = found in an <a href> on /
+         "not linked from /" = exists but not discoverable from your entry page
+       ```
+
+       Notes:
+       - SPAs typically return an empty shell on `/`, so `entryLinks` may be empty. If it is, say so once: `"Note: / returned no <a href> links (typical for SPAs) — 'not linked' flags below are noise here."` and don't repeat the "not linked" annotation on every line.
+       - For routes that redirect (`finalUrl` present), append `→ <finalUrl>` to the line.
+       - Modals/drawers triggered by query/hash (e.g. `?modal=signup`) won't be auto-detected. Mention this once in the printed output: `"figloops captures top-level routes. Modal/drawer-style overlays aren't detected — add them manually below if you want them captured."`
+
+   - **"Not running — skip"**: continue with the unannotated list.
+
+   **7d-v. Decide what to capture.** Use `AskUserQuestion`:
    ```
    question: "What would you like to do with these routes?"
    header: "Route list"
    options:
      - label: "Capture all of them"
-       description: "Use the full discovered list as-is."
+       description: "Use the full discovered list as-is (including any flagged as possibly stale)."
      - label: "Remove some"
        description: "Tell me which paths to drop and I'll update the list."
      - label: "Add more"
-       description: "I'll add any routes that weren't detected."
+       description: "I'll add any routes that weren't detected (e.g. modals via ?modal=...)."
      - label: "Start fresh"
        description: "Ignore the discovered list — I'll provide my own."
    ```
