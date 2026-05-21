@@ -156,12 +156,75 @@ The init wizard refuses to complete until every external check passes.
    ```
    If **"Something else"**: prompt for the name as plain text.
 
-   **7d. Starter routes** — this is free-form; ask in plain text. Require at least 1 `{label, path}` pair; encourage 2+. Example prompt:
-   > List the routes you want figloops to capture. Give each a short label and a path, one per line:
-   > `Dashboard  /dashboard`
-   > `Login      /login`
+   **7d. Route discovery** — auto-detect routes from the codebase, then confirm with the user.
 
-   Mark `[figloops setup] Configure project settings` as `completed` once all four are collected.
+   **7d-i. Detect the framework** by reading `package.json` (`dependencies` + `devDependencies`). Use this table to pick a strategy:
+
+   | Framework detected | Route source | File pattern |
+   |---|---|---|
+   | `next` | `pages/` dir | `pages/**/*.{tsx,ts,jsx,js}` — exclude `_app`, `_document`, `_error`, `404`, `500`, and anything under `pages/api/` |
+   | `next` (app router) | `app/` dir | `app/**/page.{tsx,ts,jsx,js}` |
+   | `nuxt` | `pages/` dir | `pages/**/*.vue` |
+   | `@sveltejs/kit` | `src/routes/` dir | `src/routes/**/+page.svelte` |
+   | `react-router*` or `@tanstack/react-router` | grep | search `src/` for `path:` or `<Route path=` patterns |
+   | `vue-router` | grep | search `src/` for `path:` patterns in router files |
+   | none matched | fallback | see below |
+
+   Run the appropriate `find` or `grep` command. Filter out:
+   - Dynamic catch-all segments (`[...slug]`, `[[...]]`)
+   - Route groups in parens (`(marketing)/page.tsx` → strip the group, keep the path)
+   - Private segments starting with `_`
+   - Index files (convert `index` → `/`)
+
+   Convert each file path to a URL path and a human-readable label:
+   - File path → URL: strip the source prefix, strip the filename, convert `[param]` → `:param` (and note it's dynamic)
+   - Label: title-case the last meaningful path segment, replace `-` and `_` with spaces (e.g., `/dashboard/user-settings` → label `User Settings`)
+   - Skip dynamic routes (paths containing `:param`) — list them separately as skipped with a note.
+
+   **7d-ii. If no framework matched** (fallback): make a single `GET /` request to the dev server URL using:
+   ```bash
+   curl -s "<DEV_SERVER_URL>" | grep -oP 'href="[^"#?]+"' | sort -u
+   ```
+   Extract `href` values that look like internal paths (start with `/`, no protocol). Use those as candidates. If even that yields nothing, fall back to asking the user for routes in plain text (original approach).
+
+   **7d-iii. Present the discovered list** in a formatted message before asking anything:
+
+   ```
+   Found N routes in your <framework> project:
+
+     /               → Home
+     /login          → Login
+     /dashboard      → Dashboard
+     /dashboard/settings → Settings
+     ...
+
+   Skipped (dynamic — no fixed URL to capture):
+     /products/[id]
+   ```
+
+   Then use `AskUserQuestion`:
+   ```
+   question: "What would you like to do with these routes?"
+   header: "Route list"
+   options:
+     - label: "Capture all of them"
+       description: "Use the full discovered list as-is."
+     - label: "Remove some"
+       description: "Tell me which paths to drop and I'll update the list."
+     - label: "Add more"
+       description: "I'll add any routes that weren't detected."
+     - label: "Start fresh"
+       description: "Ignore the discovered list — I'll provide my own."
+   ```
+
+   - **"Capture all"**: use the list as-is.
+   - **"Remove some"**: ask which paths to drop (plain text, one per line), remove them, show the updated list, ask again with the same 4 options.
+   - **"Add more"**: ask for additional `label  /path` pairs (plain text), append them, show updated list, ask again.
+   - **"Start fresh"**: ask the user to provide their own list in plain text (`Label  /path`, one per line). Require at least 1 pair.
+
+   Require at least 1 route before continuing.
+
+   Mark `[figloops setup] Configure project settings` as `completed` once the route list is finalized.
 
 8. **Write `figloops.config.json`** in the cwd:
 
