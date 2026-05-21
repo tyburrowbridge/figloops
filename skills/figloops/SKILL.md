@@ -582,7 +582,7 @@ The init wizard refuses to complete until every external check passes.
 
    - `"Approve all"`: build a status-update payload with every item `→ approved`.
 
-   - `"Approve some only"`: use the **paginated multi-select** pattern to pick the items to approve. Items not selected are rejected. If the user finishes pagination having selected nothing, say `"No items selected — returning to the top menu."` and re-ask the 4 top-level options.
+   - `"Approve some only"`: use the **paginated multi-select** pattern (see *Item-picking menus* below) over the plan items. Items the user submits are approved; the rest are rejected. The pattern handles the zero-selection and cancel paths by returning the user to this top-level menu.
 
    - `"Edit one"`: use the **paginated single-select** pattern to pick the item to edit. Then prompt as plain text — `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 top-level options.
 
@@ -678,8 +678,8 @@ The init wizard refuses to complete until every external check passes.
 5. Apply the choice:
    - `"Mark items as shipped"`: pick which items.
      - Compute `notYetShipped`: the approved items whose status is not `shipped`.
-     - Use the **paginated multi-select** pattern (see plan-approval section) over `notYetShipped` to pick items. If the user finishes pagination having selected nothing, say `"No items selected — returning to the top menu."` and re-ask the 2 top-level options.
-     - Build a status-update payload marking the selected items `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 top-level options.
+     - Use the **paginated multi-select** pattern (see *Item-picking menus*) over `notYetShipped`. The pattern handles the zero-selection and cancel paths by returning to this top-level menu.
+     - Build a status-update payload marking the submitted items `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 top-level options.
    - `"Close round"`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
 6. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
 
@@ -731,7 +731,7 @@ The `commands/help.md` file handles this directly without invoking the skill. If
 
 ## Item-picking menus
 
-`AskUserQuestion` caps options at 4. Several gates need to pick from a list that may exceed that — these patterns paginate cleanly without falling back to typed input.
+`AskUserQuestion` caps options at 4. Several gates need to pick from a list that may exceed that — these patterns paginate cleanly without falling back to typed input. Both patterns end with a **recap + confirm** so the user always sees the full picture before anything is applied.
 
 ### Paginated multi-select
 
@@ -744,7 +744,39 @@ Use when the user picks **zero or more** items from a list of any length (e.g. p
    - One option per item on this page. Label: `"<N>. <truncated change>"` (truncate to ~60 chars). Description: full change text.
 3. Allow **zero selections per page** — the user may want nothing from this page and continue to the next. Do not enforce a per-page minimum.
 4. Accumulate selections across all pages.
-5. After the last page, if total selections is 0, print `"No items selected — returning to the top menu."` and re-ask the gate's top-level question. Otherwise apply the action.
+5. **Recap + confirm** (always — even on single-page flows):
+
+   Print:
+
+   ```
+   You picked these items to <verb> (N selected):
+     1. <change text>
+     3. <change text>
+
+   These items will NOT be <verbed> (M remaining):
+     2. <change text>
+     4. <change text>
+   ```
+
+   Then `AskUserQuestion`:
+
+   ```
+   question: "Submit these selections?"
+   header: "Confirm"
+   options:
+     - label: "Submit  (Recommended)"
+       description: "Apply the selections above."
+     - label: "Start over"
+       description: "Clear all selections and re-pick from page 1."
+     - label: "Cancel"
+       description: "Discard selections and return to the gate's top menu."
+   ```
+
+   - `"Submit"`: return the accumulated selections.
+   - `"Start over"`: clear selections, restart pagination from page 1.
+   - `"Cancel"`: re-ask the gate's top-level question.
+
+6. If the user reaches the recap with zero accumulated selections, skip the recap and print `"No items selected — returning to the top menu."` and re-ask the gate's top-level question.
 
 ### Paginated single-select
 
@@ -755,13 +787,35 @@ Use when the user picks **exactly one** item from a list of any length (e.g. pla
    - `question`: `"Pick the item to <verb> — page <i> of <total>"` (omit page suffix if 1 page).
    - Options: one per item on this page (label `"<N>. <truncated change>"`, description = full text).
    - On all pages except the last, append a 4th option: `"Show next page →"` (description: `"None of these — show the next set."`).
-3. If the user picks an item: return it; pagination is done.
+3. If the user picks an item: continue to step 5.
 4. If the user picks `"Show next page →"`: advance to the next page.
-5. The last page has no sentinel — the user must pick an item there. If they have no valid pick, that's expected; the surrounding flow should provide an escape (e.g. cancelling the gate).
+5. **Recap + confirm**:
+
+   Print: `"You picked: <N>. <change text>"`
+
+   Then `AskUserQuestion`:
+
+   ```
+   question: "Submit this choice?"
+   header: "Confirm"
+   options:
+     - label: "Submit  (Recommended)"
+       description: "Continue with the item above."
+     - label: "Pick a different item"
+       description: "Re-paginate from page 1 and pick again."
+     - label: "Cancel"
+       description: "Discard and return to the gate's top menu."
+   ```
+
+   - `"Submit"`: return the picked item.
+   - `"Pick a different item"`: restart pagination from page 1.
+   - `"Cancel"`: re-ask the gate's top-level question.
+
+6. The last page has no `"Show next page →"` sentinel — the user must pick an item there. The recap then runs as above.
 
 ### Why not just type item numbers?
 
-Typed input means the user has to scroll back to see numbers, remember syntax (`1,3` vs `1 3`), and can typo. Selection menus eliminate all three failure modes at the cost of an extra click per page — worth it for the consistency.
+Typed input means the user has to scroll back to see numbers, remember syntax (`1,3` vs `1 3`), and can typo. Selection menus eliminate all three failure modes at the cost of an extra click per page — worth it for the consistency. The recap step covers the remaining concern that multi-page selections are easy to lose track of.
 
 ---
 
