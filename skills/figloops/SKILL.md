@@ -578,17 +578,13 @@ The init wizard refuses to complete until every external check passes.
        description: "No items approved. Close the round with an empty changelog note."
    ```
 
-4. Apply the choice:
+4. Apply the choice (use the pagination patterns described under **Item-picking menus** below for any sub-prompt that picks one or many items):
 
    - `"Approve all"`: build a status-update payload with every item `→ approved`.
 
-   - `"Approve some only"`: pick the approved items.
-     - **If the plan has ≤4 items**, use `AskUserQuestion` with `multiSelect: true` and one option per item (label = `"<N>. <truncated change>"`, max ~60 chars; description = full change text). Items not selected are rejected. Require at least 1 selection.
-     - **If the plan has >4 items**, prompt as plain text — `"Which item numbers should be approved? (e.g. 1,3)"`. Parse comma-separated integers. Mark those `→ approved`, all others `→ rejected`.
+   - `"Approve some only"`: use the **paginated multi-select** pattern to pick the items to approve. Items not selected are rejected. If the user finishes pagination having selected nothing, say `"No items selected — returning to the top menu."` and re-ask the 4 top-level options.
 
-   - `"Edit one"`: pick the item to edit, then the new wording.
-     - **If the plan has ≤4 items**, use `AskUserQuestion` (single-select) with one option per item to pick which one. Otherwise prompt as plain text — `"Which item number do you want to edit?"` and parse the integer.
-     - Then prompt as plain text — `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 top-level options.
+   - `"Edit one"`: use the **paginated single-select** pattern to pick the item to edit. Then prompt as plain text — `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 top-level options.
 
    - `"Reject all"`: status-update payload with every item `→ rejected`. Advance directly to `close` (skip implement).
 
@@ -682,8 +678,7 @@ The init wizard refuses to complete until every external check passes.
 5. Apply the choice:
    - `"Mark items as shipped"`: pick which items.
      - Compute `notYetShipped`: the approved items whose status is not `shipped`.
-     - **If `notYetShipped.length` ≤ 4**, use `AskUserQuestion` with `multiSelect: true` and one option per remaining item (label = `"<N>. <truncated change>"`, max ~60 chars). Require at least 1 selection.
-     - **If `notYetShipped.length` > 4**, prompt as plain text — `"Which item numbers shipped? (e.g. 2 or 2,3)"`. Parse comma-separated integers.
+     - Use the **paginated multi-select** pattern (see plan-approval section) over `notYetShipped` to pick items. If the user finishes pagination having selected nothing, say `"No items selected — returning to the top menu."` and re-ask the 2 top-level options.
      - Build a status-update payload marking the selected items `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 top-level options.
    - `"Close round"`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
 6. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
@@ -731,6 +726,42 @@ Do not advance state. Do not call MCP.
 ## Phase: `help`
 
 The `commands/help.md` file handles this directly without invoking the skill. If for some reason this phase is dispatched here, defer to `commands/help.md` and produce identical output.
+
+---
+
+## Item-picking menus
+
+`AskUserQuestion` caps options at 4. Several gates need to pick from a list that may exceed that — these patterns paginate cleanly without falling back to typed input.
+
+### Paginated multi-select
+
+Use when the user picks **zero or more** items from a list of any length (e.g. plan-approval → "Approve some only", implement → "Mark items as shipped").
+
+1. Chunk the list into pages of 4 items, preserving order.
+2. For each page in order, call `AskUserQuestion` with:
+   - `multiSelect: true`
+   - `question`: `"Select items to <verb> — page <i> of <total>"` (omit the page suffix if there's only 1 page).
+   - One option per item on this page. Label: `"<N>. <truncated change>"` (truncate to ~60 chars). Description: full change text.
+3. Allow **zero selections per page** — the user may want nothing from this page and continue to the next. Do not enforce a per-page minimum.
+4. Accumulate selections across all pages.
+5. After the last page, if total selections is 0, print `"No items selected — returning to the top menu."` and re-ask the gate's top-level question. Otherwise apply the action.
+
+### Paginated single-select
+
+Use when the user picks **exactly one** item from a list of any length (e.g. plan-approval → "Edit one").
+
+1. Chunk the list into pages of 3 items, reserving the 4th slot for a sentinel.
+2. For each page in order, call `AskUserQuestion` (single-select) with:
+   - `question`: `"Pick the item to <verb> — page <i> of <total>"` (omit page suffix if 1 page).
+   - Options: one per item on this page (label `"<N>. <truncated change>"`, description = full text).
+   - On all pages except the last, append a 4th option: `"Show next page →"` (description: `"None of these — show the next set."`).
+3. If the user picks an item: return it; pagination is done.
+4. If the user picks `"Show next page →"`: advance to the next page.
+5. The last page has no sentinel — the user must pick an item there. If they have no valid pick, that's expected; the surrounding flow should provide an escape (e.g. cancelling the gate).
+
+### Why not just type item numbers?
+
+Typed input means the user has to scroll back to see numbers, remember syntax (`1,3` vs `1 3`), and can typo. Selection menus eliminate all three failure modes at the cost of an extra click per page — worth it for the consistency.
 
 ---
 
