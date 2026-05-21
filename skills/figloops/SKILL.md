@@ -60,7 +60,77 @@ The init wizard refuses to complete until every external check passes.
 
 1. **MCP preflight** (above). On failure, abort here.
 
-2. **Create the setup checklist.** Call `TaskCreate` 5 times in a single message (all `pending`) so the user can track wizard progress:
+2. **Existing project detection.** Check the cwd for prior figloops state before touching anything. Two files matter:
+
+   **2a. `feedback/state.json`** (in-progress round). If present, do **not** auto-delete — running init again on an active round is almost always a mistake.
+
+   Use `AskUserQuestion`:
+
+   ```
+   question: "An in-progress round already exists in this project. What do you want to do?"
+   header: "Existing round"
+   options:
+     - label: "Resume — exit init, just run /figloops:next"
+     - label: "Archive — rename state.json to a backup and start fresh"
+     - label: "Cancel — don't change anything"
+   ```
+
+   - `"Resume"`: print `"Round <N> phase <phase> is in progress. Run /figloops:next to continue."` (read these from the existing state) and abort init.
+   - `"Archive"`: rename `feedback/state.json` to `feedback/state.<YYYYMMDD-HHMMSS>.json.bak` using `date '+%Y%m%d-%H%M%S'`. Tell the user the backup path. Continue.
+   - `"Cancel"`: print `"Cancelled. Existing round preserved."` and abort.
+
+   **2b. `figloops.config.json`** (existing config). If present, try to validate it against the current FIGMA_TOKEN before asking anything (reuse step 6a's logic to find a token in `process.env.FIGMA_TOKEN` or in `.env`). If a token is available, run:
+
+   ```bash
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getFile({ fileKey: '<KEY_FROM_CONFIG>', token: process.env.FIGMA_TOKEN }).then(f => console.log(JSON.stringify(f)))).catch(e => { console.error(e.message); process.exit(1); })"
+   ```
+
+   Three branches based on what happens:
+
+   - **Validation succeeds** (file accessible): use `AskUserQuestion`:
+
+     ```
+     question: "An existing figloops.config.json was found and its Figma file validates. Reuse it?"
+     header: "Existing config"
+     options:
+       - label: "Reuse — skip the wizard and re-init state only"
+       - label: "Walk through wizard — current values become defaults"
+       - label: "Start fresh — archive the old config and re-collect everything"
+     ```
+
+     - `"Reuse"`: skip directly to step 11 (Initialize state). Steps 3–10 are unnecessary; the config and `.env` are already valid.
+     - `"Walk through wizard"`: continue normally, but pre-fill answers in steps 7–9 from the existing config where the user is presented options (dev server URL, viewport, file URL, routes).
+     - `"Start fresh"`: rename `figloops.config.json` to `figloops.config.<YYYYMMDD-HHMMSS>.json.bak`. Continue normally.
+
+   - **Validation fails** (401/403/404 or network error): tell the user `"Existing figloops.config.json points to a Figma file that isn't accessible (fileKey: <KEY>, error: <msg>). The file was probably deleted, moved, or your token lost access."` Then `AskUserQuestion`:
+
+     ```
+     question: "How do you want to handle the stale config?"
+     header: "Stale config"
+     options:
+       - label: "Archive it and start fresh"
+       - label: "Keep it (I'll fix the fileKey manually) — abort init"
+     ```
+
+     - `"Archive it and start fresh"`: rename to `.bak` as above. Continue.
+     - `"Keep it"`: abort init with a one-line summary of what to fix.
+
+   - **No token available** (can't validate): print `"Existing figloops.config.json found, but no FIGMA_TOKEN is set so it can't be validated yet."` Then `AskUserQuestion`:
+
+     ```
+     question: "What do you want to do with the existing config?"
+     header: "Existing config"
+     options:
+       - label: "Reuse it — skip wizard, re-init state only"
+       - label: "Start fresh — archive and re-collect everything"
+     ```
+
+     - `"Reuse"`: skip to step 11 (Initialize state). The PAT validation in step 6 will surface any token problem later.
+     - `"Start fresh"`: archive + continue.
+
+   If neither file exists, this step is a no-op. Continue to step 3.
+
+3. **Create the setup checklist.** Call `TaskCreate` 5 times in a single message (all `pending`) so the user can track wizard progress:
    - `[figloops setup] Verify Figma MCP`
    - `[figloops setup] Authenticate with Figma`
    - `[figloops setup] Connect Figma file`
@@ -69,7 +139,7 @@ The init wizard refuses to complete until every external check passes.
 
    Immediately mark `[figloops setup] Verify Figma MCP` as `completed` (MCP preflight already passed).
 
-3. **Figma file readiness check.** Use `AskUserQuestion`:
+4. **Figma file readiness check.** Use `AskUserQuestion`:
 
    ```
    question: "Do you have a Figma file ready for this project?"
@@ -82,17 +152,17 @@ The init wizard refuses to complete until every external check passes.
    - If **"No"**: print `Open Figma, create a new file, then re-run /figloops:init.` and abort.
    - If **"Yes"**: continue.
 
-4. **Determine `<PLUGIN_DIR>`.** It is this skill's parent directory's parent (i.e., `.../figloops`). If `FIGLOOPS_PLUGIN_DIR` is not already set, print the resolved absolute path and tell the user you'll write it into `.env` later.
+5. **Determine `<PLUGIN_DIR>`.** It is this skill's parent directory's parent (i.e., `.../figloops`). If `FIGLOOPS_PLUGIN_DIR` is not already set, print the resolved absolute path and tell the user you'll write it into `.env` later.
 
-5. **Figma PAT validation.** Mark `[figloops setup] Authenticate with Figma` as `in_progress`.
+6. **Figma PAT validation.** Mark `[figloops setup] Authenticate with Figma` as `in_progress`.
 
-   **5a. Upfront check — look for an existing token before asking anything:**
+   **6a. Upfront check — look for an existing token before asking anything:**
    - Check `process.env.FIGMA_TOKEN` (shell environment).
    - If not in shell env, check if `.env` exists in cwd and contains a `FIGMA_TOKEN=` line; extract the value.
-   - If a token is found either way, silently validate it (step 5c below). On success, tell the user: `"Found an existing FIGMA_TOKEN — validated successfully."` Mark `[figloops setup] Authenticate with Figma` as `completed` and skip to step 6.
-   - On validation failure, tell the user the token is invalid and continue to step 5b.
+   - If a token is found either way, silently validate it (step 6c below). On success, tell the user: `"Found an existing FIGMA_TOKEN — validated successfully."` Mark `[figloops setup] Authenticate with Figma` as `completed` and skip to step 7.
+   - On validation failure, tell the user the token is invalid and continue to step 6b.
 
-   **5b. If no valid token was found, use `AskUserQuestion`:**
+   **6b. If no valid token was found, use `AskUserQuestion`:**
 
    ```
    question: "How would you like to set up your Figma Personal Access Token?"
@@ -105,9 +175,9 @@ The init wizard refuses to complete until every external check passes.
 
    - **"I already have one"**: prompt them to paste the token as plain text in their next message.
    - **"I need to create one"**: print `https://www.figma.com/developers/api#access-tokens` with scope instructions, then abort. Tell them to re-run `/figloops:init` when they have the token.
-   - **"It's already in my shell / .env"**: re-run step 5a. If still not found, tell them the variable name to set and abort.
+   - **"It's already in my shell / .env"**: re-run step 6a. If still not found, tell them the variable name to set and abort.
 
-   **5c. Validate the token** (whichever source provided it):
+   **6c. Validate the token** (whichever source provided it):
 
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getMe({ token: process.env.FIGMA_TOKEN }).then(me => console.log(JSON.stringify(me)))).catch(e => { console.error(e.message); process.exit(1); })"
@@ -115,7 +185,7 @@ The init wizard refuses to complete until every external check passes.
 
    Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet. On failure (401 / network), abort init with the error message + `https://www.figma.com/developers/api#access-tokens`. On success, mark `[figloops setup] Authenticate with Figma` as `completed`.
 
-6. **Figma file URL validation.** Mark `[figloops setup] Connect Figma file` as `in_progress`. Ask the user to paste their Figma file URL. Accept any of:
+7. **Figma file URL validation.** Mark `[figloops setup] Connect Figma file` as `in_progress`. Ask the user to paste their Figma file URL. Accept any of:
    - `https://www.figma.com/file/<KEY>/<NAME>`
    - `https://www.figma.com/design/<KEY>/<NAME>`
    - `https://www.figma.com/proto/<KEY>/<NAME>`
@@ -128,9 +198,9 @@ The init wizard refuses to complete until every external check passes.
 
    On 403/404, surface the error and re-prompt for a corrected URL. On success, mark `[figloops setup] Connect Figma file` as `completed`.
 
-7. **Project config.** Mark `[figloops setup] Configure project settings` as `in_progress`. Collect settings in this order using `AskUserQuestion` for each:
+8. **Project config.** Mark `[figloops setup] Configure project settings` as `in_progress`. Collect settings in this order using `AskUserQuestion` for each:
 
-   **7a. Dev server URL** — use `AskUserQuestion`:
+   **8a. Dev server URL** — use `AskUserQuestion`:
    ```
    question: "What URL is your dev server running on?"
    header: "Dev server"
@@ -142,7 +212,7 @@ The init wizard refuses to complete until every external check passes.
    ```
    The "Other" option (auto-provided) lets the user type a custom URL.
 
-   **7b. Viewport** — use `AskUserQuestion`:
+   **8b. Viewport** — use `AskUserQuestion`:
    ```
    question: "What viewport size should figloops capture at?"
    header: "Viewport"
@@ -154,7 +224,7 @@ The init wizard refuses to complete until every external check passes.
    ```
    The "Other" option lets the user type `width x height` (parse both formats: `1440x900` or `1440 x 900`).
 
-   **7c. Changelog page name** — use `AskUserQuestion`:
+   **8c. Changelog page name** — use `AskUserQuestion`:
    ```
    question: "What should the Figma changelog page be called?"
    header: "Changelog page"
@@ -164,9 +234,9 @@ The init wizard refuses to complete until every external check passes.
    ```
    If **"Something else"**: prompt for the name as plain text.
 
-   **7d. Route discovery** — auto-detect routes from the codebase, then confirm with the user.
+   **8d. Route discovery** — auto-detect routes from the codebase, then confirm with the user.
 
-   **7d-i. Detect the framework** by reading `package.json` (`dependencies` + `devDependencies`). Use this table to pick a strategy:
+   **8d-i. Detect the framework** by reading `package.json` (`dependencies` + `devDependencies`). Use this table to pick a strategy:
 
    | Framework detected | Route source | File pattern |
    |---|---|---|
@@ -203,13 +273,13 @@ The init wizard refuses to complete until every external check passes.
    - Label: title-case the last meaningful path segment, replace `-` and `_` with spaces (e.g., `/dashboard/user-settings` → label `User Settings`)
    - Skip dynamic routes (paths containing `:param`) — list them separately as skipped with a note.
 
-   **7d-ii. If no framework matched** (fallback): make a single `GET /` request to the dev server URL using:
+   **8d-ii. If no framework matched** (fallback): make a single `GET /` request to the dev server URL using:
    ```bash
    curl -s "<DEV_SERVER_URL>" | grep -oP 'href="[^"#?]+"' | sort -u
    ```
    Extract `href` values that look like internal paths (start with `/`, no protocol). Use those as candidates. If even that yields nothing, fall back to asking the user for routes in plain text (original approach).
 
-   **7d-iii. Present the discovered list** as a table before asking anything:
+   **8d-iii. Present the discovered list** as a table before asking anything:
 
    ```
    Found N routes in your <framework> project:
@@ -228,7 +298,7 @@ The init wizard refuses to complete until every external check passes.
    | /products/[id] | dynamic segment |
    ```
 
-   **7d-iv. Optional: probe the dev server for stale routes.** Routes discovered from source can be dead code (orphaned files, abandoned features, behind a removed flag). If the dev server is running we can flag them. Use `AskUserQuestion`:
+   **8d-iv. Optional: probe the dev server for stale routes.** Routes discovered from source can be dead code (orphaned files, abandoned features, behind a removed flag). If the dev server is running we can flag them. Use `AskUserQuestion`:
 
    ```
    question: "Is your dev server running at <URL>? Probing it now will flag routes that may be stale."
@@ -271,7 +341,7 @@ The init wizard refuses to complete until every external check passes.
 
    - **"Not running — skip"**: continue with the unannotated list.
 
-   **7d-v. Decide what to capture.** Use `AskUserQuestion`:
+   **8d-v. Decide what to capture.** Use `AskUserQuestion`:
    ```
    question: "What would you like to do with these routes?"
    header: "Route list"
@@ -291,11 +361,11 @@ The init wizard refuses to complete until every external check passes.
 
    **Path normalization (apply before continuing):** For every route in the final list, ensure the path starts with `/`. If a path is missing the leading slash (e.g. `?tab=reports`, `dashboard`), prepend `/` silently — do not re-prompt. The config validator will reject paths without a leading `/`.
 
-   **7e. Discover scenarios beyond routes (modals, themed variants, etc.).**
+   **8e. Discover scenarios beyond routes (modals, themed variants, etc.).**
 
    Routes capture top-level pages. **Scenarios** capture states that aren't reachable by URL alone — modals/dialogs, drawers, toasts, dark mode, empty/error states. They're optional; users can add them now or later by editing `figloops.config.json`.
 
-   **7e-i. Library detection.** Read `package.json` (`dependencies` + `devDependencies`) and check for known UI libraries:
+   **8e-i. Library detection.** Read `package.json` (`dependencies` + `devDependencies`) and check for known UI libraries:
 
    | Category | Package names to detect |
    |---|---|
@@ -305,7 +375,7 @@ The init wizard refuses to complete until every external check passes.
 
    Build a short summary line, e.g. `"Detected: @radix-ui/react-dialog (modals), sonner (toasts), next-themes (themes)."` — or `"No common UI-state libraries detected."` if none match.
 
-   **7e-ii. Ask whether to add scenarios.** Use `AskUserQuestion`:
+   **8e-ii. Ask whether to add scenarios.** Use `AskUserQuestion`:
 
    ```
    question: "Add scenarios beyond top-level routes? (modals, dark mode, empty/error states, etc.)"
@@ -315,7 +385,7 @@ The init wizard refuses to complete until every external check passes.
      - label: "Skip — I'll add them later"
    ```
 
-   **7e-iii. If "Yes — add some now":** prompt as plain text:
+   **8e-iii. If "Yes — add some now":** prompt as plain text:
 
    ```
    Enter one scenario per line in this format:
@@ -353,9 +423,9 @@ The init wizard refuses to complete until every external check passes.
      - label: "Skip — add none"
    ```
 
-   Apply the choice. The scenarios are written to the `scenarios` array in step 8.
+   Apply the choice. The scenarios are written to the `scenarios` array in step 9.
 
-   **7f. Git workflow preference (only if cwd is a git repo).** First check:
+   **8f. Git workflow preference (only if cwd is a git repo).** First check:
 
    ```bash
    git rev-parse --is-inside-work-tree 2>/dev/null
@@ -374,11 +444,11 @@ The init wizard refuses to complete until every external check passes.
      - label: "Never — I'll manage git myself"
    ```
 
-   Store the choice as `ask`, `always`, or `never` for step 8.
+   Store the choice as `ask`, `always`, or `never` for step 9.
 
    Mark `[figloops setup] Configure project settings` as `completed` once the route list is finalized.
 
-8. **Write `figloops.config.json`** in the cwd. Include the `scenarios` block only if step 7e collected any (omit it entirely otherwise). Include the `git` block only if step 7f ran (i.e., cwd is a git repo); omit it entirely otherwise.
+9. **Write `figloops.config.json`** in the cwd. Include the `scenarios` block only if step 8e collected any (omit it entirely otherwise). Include the `git` block only if step 8f ran (i.e., cwd is a git repo); omit it entirely otherwise.
 
    ```json
    {
@@ -392,14 +462,14 @@ The init wizard refuses to complete until every external check passes.
    }
    ```
 
-9. **Write `.env`** (do NOT overwrite if it exists — instead print the keys the user should add manually):
+10. **Write `.env`** (do NOT overwrite if it exists — instead print the keys the user should add manually):
 
    ```
-   FIGMA_TOKEN=<token from step 5>
+   FIGMA_TOKEN=<token from step 6>
    FIGLOOPS_PLUGIN_DIR=<PLUGIN_DIR>
    ```
 
-10. **Initialize state.** Mark `[figloops setup] Initialize figloops` as `in_progress`. Run:
+11. **Initialize state.** Mark `[figloops setup] Initialize figloops` as `in_progress`. Run:
 
     ```bash
     "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
@@ -407,7 +477,7 @@ The init wizard refuses to complete until every external check passes.
 
     Mark `[figloops setup] Initialize figloops` as `completed`.
 
-11. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
+12. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
     - `[figloops] Capture screenshots`
     - `[figloops] Push to Figma`
     - `[figloops] Wait for user comments`
@@ -418,7 +488,7 @@ The init wizard refuses to complete until every external check passes.
     - `[figloops] Implement changes`
     - `[figloops] Close round`
 
-12. **Print the "ready" summary** to the user:
+13. **Print the "ready" summary** to the user:
 
     > Setup complete. Round 1 is ready to begin. Run `/figloops:next` to capture screenshots of your configured routes.
 
