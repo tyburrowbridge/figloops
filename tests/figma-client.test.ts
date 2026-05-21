@@ -55,21 +55,42 @@ describe('uploadImage', () => {
     expect(hash).toBe('hash-abc');
   });
 
-  it('throws with status and body on 4xx', async () => {
+  it('throws an actionable auth/access error on 401/403/404 with the fileKey called out', async () => {
+    for (const status of [401, 403, 404] as const) {
+      (fetch as any).mockResolvedValue({
+        ok: false,
+        status,
+        text: async () => 'denied',
+      });
+
+      await expect(
+        uploadImage({
+          fileKey: 'abc123',
+          token: 'bad',
+          filename: 'x.png',
+          bytes: Buffer.from([0]),
+        }),
+      ).rejects.toThrowError(
+        new RegExp(`Figma rejected the upload \\(${status}\\).*abc123.*FIGMA_TOKEN`, 's'),
+      );
+    }
+  });
+
+  it('throws with status and body on other 4xx', async () => {
     (fetch as any).mockResolvedValue({
       ok: false,
-      status: 403,
-      text: async () => 'Forbidden: bad token',
+      status: 422,
+      text: async () => 'malformed',
     });
 
     await expect(
       uploadImage({
         fileKey: 'abc123',
-        token: 'bad',
+        token: 'tok',
         filename: 'x.png',
         bytes: Buffer.from([0]),
       }),
-    ).rejects.toThrowError(/403.*Forbidden/);
+    ).rejects.toThrowError(/422.*malformed/);
   });
 
   it('retries on 5xx and succeeds if a later attempt works', async () => {
@@ -119,7 +140,7 @@ describe('uploadImage', () => {
         filename: 'x.png',
         bytes: Buffer.from([0]),
       }),
-    ).rejects.toThrowError(/403.*Forbidden/);
+    ).rejects.toThrowError(/Figma rejected the upload \(403\).*abc123/s);
 
     expect(calls).toBe(1);
   });

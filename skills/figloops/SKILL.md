@@ -564,19 +564,28 @@ The init wizard refuses to complete until every external check passes.
 ### Phase handler: `comment-review`
 
 1. Mark `[figloops] Review comments` as `in_progress`.
-2. Read `feedback/state.json`. Render comments as a single table sorted by frame label, then by insertion order within each frame. Escape any `|` in cells and flatten newlines.
+2. Read `feedback/state.json`. Group comments by frame label, then render each frame as its own sub-table. Use a **per-round sequence number** as the `#` column (1, 2, 3, ... assigned in the same order the comments appear in `state.rounds[N].comments`) — the Figma comment ID stays in state for traceability but is too noisy to surface here. Escape any `|` in cells and flatten newlines.
 
    ```
    Round <round> — Comments to review (<N> total)
 
-   | # | Frame | Author | Comment |
-   |---|---|---|---|
-   | 12 | 01 - Login | Sarah Lee | The CTA below the form is hard to find. |
-   | 17 | 01 - Login | Mike Chen | Form copy is unclear; add helper text. |
-   | 23 | 02 - Dashboard | Sarah Lee | Nav doesn't show what's active. |
+   #### Frame: 01 - Login
+
+   | # | Author | Comment |
+   |---|---|---|
+   | 1 | Sarah Lee | The CTA below the form is hard to find. |
+   | 2 | Mike Chen | Form copy is unclear; add helper text. |
+
+   #### Frame: 02 - Dashboard
+
+   | # | Author | Comment |
+   |---|---|---|
+   | 3 | Sarah Lee | Nav doesn't show what's active. |
 
    Your Figma file: <URL>
    ```
+
+   Frame groups appear in the order the first comment for each frame was inserted. Comments within a frame keep their insertion order. The `#` sequence is global across all frames in the round, not reset per frame.
 
 3. Use `AskUserQuestion`:
 

@@ -85,11 +85,31 @@ describe('renderSnapshot', () => {
     expect(md).toContain('Mike Chen (#17)');
   });
 
-  it('renders themes as a markdown table with Theme / Cites / Summary columns', () => {
+  it('renders themes as a markdown table with Theme / # / Cites / Summary columns', () => {
     const md = renderSnapshot(baseState, 2);
-    expect(md).toContain('| Theme | Cites | Summary |');
-    expect(md).toContain('|---|---|---|');
-    expect(md).toMatch(/\| Navigation clarity \| .*Sarah Lee \(#12\).*Mike Chen \(#17\).* \| Users struggled to orient inside the app\. \|/);
+    expect(md).toContain('| Theme | # | Cites | Summary |');
+    expect(md).toContain('|---|---|---|---|');
+    expect(md).toMatch(/\| Navigation clarity \| 2 \| Sarah Lee, Mike Chen \| Users struggled to orient inside the app\. \|/);
+  });
+
+  it('collapses repeat authors in cite tally as "Name ×N"', () => {
+    const stateRepeats: State = {
+      ...baseState,
+      rounds: {
+        '2': {
+          ...baseState.rounds['2'],
+          themes: [
+            {
+              name: 'Form clarity',
+              commentIds: ['12', '12', '17'], // Sarah twice, Mike once
+              summary: 'Form-related friction.',
+            },
+          ],
+        },
+      },
+    };
+    const md = renderSnapshot(stateRepeats, 2);
+    expect(md).toMatch(/\| Form clarity \| 3 \| Sarah Lee ×2, Mike Chen \|/);
   });
 
   it('escapes pipes and newlines in theme cells', () => {

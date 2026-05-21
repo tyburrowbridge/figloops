@@ -54,6 +54,14 @@ export async function uploadImage(args: UploadImageArgs): Promise<string> {
       continue;
     }
 
+    // Auth/access errors are not retryable. Surface a clear, actionable
+    // message that points the user at the two likely causes.
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
+      throw new Error(
+        `Figma rejected the upload (${res.status}). Either the file key in figloops.config.json (${args.fileKey}) is wrong, or your FIGMA_TOKEN no longer has edit access to it. Verify the file exists and the token can edit it.`,
+      );
+    }
+
     throw new Error(`Figma upload failed (${res.status}): ${body}`);
   }
 

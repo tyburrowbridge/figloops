@@ -21,6 +21,23 @@ function citeMany(comments: Comment[], ids: string[]): string {
     .join(', ');
 }
 
+/**
+ * Collapse a citation list to "Name", "Name ×N" per unique author, in order
+ * of first appearance. Unknown ids (not in `comments`) group under "unknown".
+ */
+function citeTally(comments: Comment[], ids: string[]): string {
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  const counts = new Map<string, number>();
+  for (const id of ids) {
+    const c = byId.get(id);
+    const name = c ? c.authorName : 'unknown';
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([name, n]) => (n > 1 ? `${name} ×${n}` : name))
+    .join(', ');
+}
+
 function renderCaptures(round: RoundData): string {
   if (round.captures.length === 0) {
     return '_no captures yet_';
@@ -57,12 +74,13 @@ function renderThemes(round: RoundData): string {
   if (round.themes.length === 0) {
     return '_no themes yet_';
   }
-  const lines: string[] = ['| Theme | Cites | Summary |', '|---|---|---|'];
+  const lines: string[] = ['| Theme | # | Cites | Summary |', '|---|---|---|---|'];
   for (const t of round.themes) {
     const name = escapeCell(t.name);
-    const cites = escapeCell(citeMany(round.comments, t.commentIds));
+    const count = t.commentIds.length;
+    const cites = escapeCell(citeTally(round.comments, t.commentIds));
     const summary = escapeCell(t.summary);
-    lines.push(`| ${name} | ${cites} | ${summary} |`);
+    lines.push(`| ${name} | ${count} | ${cites} | ${summary} |`);
   }
   return lines.join('\n');
 }

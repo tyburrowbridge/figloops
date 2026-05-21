@@ -33,10 +33,11 @@ Then, iterating rounds in numeric order from `1` up to `currentRound`, render ea
 **Round body:**
 - If the round has 0 themes: print `_no themes yet_` then a blank line. Continue to next round.
 - Otherwise, render a single markdown table for the round with one row per theme:
-  - Header row: `| Theme | Cites | Summary |` then the separator `|---|---|---|`.
+  - Header row: `| Theme | # | Cites | Summary |` then the separator `|---|---|---|---|`.
   - For each theme in `round.themes` (preserve order):
     - **Theme**: `theme.name`
-    - **Cites**: comma-separated `<authorName> (#<id>)` — look each id up in `round.comments` and use that comment's `authorName`. If a cited id is not found, fall back to `#<id>`.
+    - **#**: `theme.commentIds.length` — number of comments backing the theme.
+    - **Cites**: tally citations by author. For each unique author in order of first appearance, write `<authorName>` if they have 1 citation, or `<authorName> ×N` if they have more. Join with `, `. Look each id up in `round.comments`; group unknown ids as `unknown`.
     - **Summary**: `theme.summary`
   - Replace any `|` in cell content with `\|` and any newline with a space to keep the table valid.
 - Print a blank line after the table.
@@ -50,10 +51,10 @@ Print one blank line between rounds.
 
 ## Round 1 — closed 2026-05-12
 
-| Theme | Cites | Summary |
-|---|---|---|
-| Navigation clarity | Sarah Lee (#12), Mike Chen (#17) | users struggled to orient inside the app. |
-| Color contrast | Anita Roy (#41) | secondary buttons read as disabled because contrast is too low. |
+| Theme | # | Cites | Summary |
+|---|---|---|---|
+| Navigation clarity | 3 | Sarah Lee ×2, Mike Chen | users struggled to orient inside the app. |
+| Color contrast | 1 | Anita Roy | secondary buttons read as disabled because contrast is too low. |
 
 ## Round 2 — in progress (phase: cluster)
 _no themes yet_

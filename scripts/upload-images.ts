@@ -3,7 +3,16 @@ import { join } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { loadConfig } from '../src/config.js';
 import { loadState, currentRoundData, type Capture } from '../src/state.js';
-import { uploadImage } from '../src/figma-client.js';
+import { uploadImage, getFile } from '../src/figma-client.js';
+
+/**
+ * Returns true if the error message looks like a 401/403/404 from Figma —
+ * meaning every subsequent upload in this run will fail the same way, so we
+ * should abort the loop instead of spamming N identical errors.
+ */
+function isAuthClassError(message: string): boolean {
+  return /\b(401|403|404)\b/.test(message);
+}
 
 interface UploadOutput {
   round: number;
@@ -40,6 +49,17 @@ async function main() {
     process.exit(1);
   }
 
+  // Preflight: verify the configured Figma file is reachable BEFORE we start
+  // pushing images. Catches stale/wrong file keys and revoked tokens with one
+  // fast call instead of N identical 404s during upload.
+  try {
+    await getFile({ fileKey: config.figma.fileKey, token });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[upload-images] preflight failed: ${message}\n`);
+    process.exit(1);
+  }
+
   // Build map of filename -> capture to get canonical labels
   const captureByFilename = new Map<string, Capture>();
   for (const capture of currentRoundData(state).captures) {
@@ -70,6 +90,15 @@ async function main() {
       const message = err instanceof Error ? err.message : String(err);
       out.failed.push({ filename, error: message });
       process.stderr.write(`[upload] FAILED ${filename}: ${message}\n`);
+
+      // Bail on the first auth/access error — every remaining upload will
+      // fail the same way. Better to surface one clear failure than N.
+      if (isAuthClassError(message)) {
+        process.stderr.write(
+          `[upload-images] aborting after auth/access error — remaining ${files.length - out.uploads.length - out.failed.length} file(s) skipped.\n`,
+        );
+        break;
+      }
     }
   }
 
