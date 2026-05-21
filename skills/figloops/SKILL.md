@@ -300,7 +300,76 @@ The init wizard refuses to complete until every external check passes.
 
    Require at least 1 route before continuing.
 
-   **7e. Git workflow preference (only if cwd is a git repo).** First check:
+   **7e. Discover scenarios beyond routes (modals, themed variants, etc.).**
+
+   Routes capture top-level pages. **Scenarios** capture states that aren't reachable by URL alone — modals/dialogs, drawers, toasts, dark mode, empty/error states. They're optional; users can add them now or later by editing `figloops.config.json`.
+
+   **7e-i. Library detection.** Read `package.json` (`dependencies` + `devDependencies`) and check for known UI libraries:
+
+   | Category | Package names to detect |
+   |---|---|
+   | Modal/dialog | `react-modal`, `@radix-ui/react-dialog`, `@headlessui/react`, `vaul`, `@mantine/core`, `@mui/material`, `@chakra-ui/react`, `react-bootstrap`, `react-aria-components` |
+   | Toast/notification | `sonner`, `react-hot-toast`, `react-toastify`, `@radix-ui/react-toast`, `notistack` |
+   | Theme/dark mode | `next-themes`, `theme-ui` |
+
+   Build a short summary line, e.g. `"Detected: @radix-ui/react-dialog (modals), sonner (toasts), next-themes (themes)."` — or `"No common UI-state libraries detected."` if none match.
+
+   **7e-ii. Ask whether to add scenarios.** Use `AskUserQuestion`:
+
+   ```
+   question: "Add scenarios beyond top-level routes? (modals, dark mode, empty/error states, etc.)"
+   header: "Scenarios"
+   options:
+     - label: "Yes — add some now"
+       description: "Walk me through adding one or more. You'll define a label, a path, and any setup-click selectors."
+     - label: "Skip — I'll add them later"
+       description: "figloops will only capture routes. You can edit figloops.config.json to add scenarios any time."
+   ```
+
+   **7e-iii. If "Yes — add some now":** prompt as plain text:
+
+   ```
+   Enter one scenario per line in this format:
+
+     <label> | <path> | <selector1>; <selector2>; ...
+
+   - <label>: a short name for the Figma frame (e.g. "Sign up modal")
+   - <path>: the URL path to navigate to first (e.g. "/")
+   - <selector...>: optional, semicolon-separated CSS selectors to click in order
+     before capture. Omit (and the trailing `|`) for scenarios reachable by URL
+     alone (e.g. dark mode applied at /?theme=dark).
+
+   Examples:
+     Sign up modal | / | [data-testid=open-signup]
+     Dashboard — empty state | /dashboard?empty=1
+     Dashboard — dark mode | /dashboard | [data-testid=toggle-theme]
+
+   Enter your scenarios (blank line to finish):
+   ```
+
+   Parse each line:
+   - Split on `|` (trim each segment).
+   - Required: `label`, `path`. Reject lines without both, surface the error, re-prompt.
+   - Optional: `setup` — split the third segment on `;` and trim each. Reject empty selectors.
+   - `path` must start with `/`.
+
+   Show the parsed list and confirm via `AskUserQuestion`:
+
+   ```
+   question: "Add these scenarios?"
+   header: "Confirm scenarios"
+   options:
+     - label: "Add them all"
+       description: "Append the scenarios to the config."
+     - label: "Start over"
+       description: "Discard and re-enter."
+     - label: "Skip — add none"
+       description: "Skip scenarios; figloops will only capture routes."
+   ```
+
+   Apply the choice. The scenarios are written to the `scenarios` array in step 8.
+
+   **7f. Git workflow preference (only if cwd is a git repo).** First check:
 
    ```bash
    git rev-parse --is-inside-work-tree 2>/dev/null
@@ -326,7 +395,7 @@ The init wizard refuses to complete until every external check passes.
 
    Mark `[figloops setup] Configure project settings` as `completed` once the route list is finalized.
 
-8. **Write `figloops.config.json`** in the cwd. Include the `git` block only if step 7e ran (i.e., cwd is a git repo); omit it entirely otherwise.
+8. **Write `figloops.config.json`** in the cwd. Include the `scenarios` block only if step 7e collected any (omit it entirely otherwise). Include the `git` block only if step 7f ran (i.e., cwd is a git repo); omit it entirely otherwise.
 
    ```json
    {
@@ -335,6 +404,7 @@ The init wizard refuses to complete until every external check passes.
      "viewport": { "width": <W>, "height": <H> },
      "figma": { "fileKey": "<KEY>", "changelogPageName": "<NAME>" },
      "routes": [ { "label": "<LABEL>", "path": "<PATH>" } ],
+     "scenarios": [ { "label": "<LABEL>", "path": "<PATH>", "setup": ["<SELECTOR>"] } ],
      "git": { "branchPerRound": "<ask|always|never>" }
    }
    ```

@@ -64,6 +64,38 @@ describe('configSchema', () => {
     data.git = { branchPerRound: 'sometimes' };
     expect(configSchema.safeParse(data).success).toBe(false);
   });
+
+  it('accepts config with no scenarios block (backwards compatible)', () => {
+    const data = readFixture('valid-config.json');
+    expect(data.scenarios).toBeUndefined();
+    expect(configSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('accepts a scenario with label + path only', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [{ label: 'Sign up modal', path: '/' }];
+    expect(configSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('accepts a scenario with setup selectors + waitFor', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [
+      { label: 'Sign up modal', path: '/', setup: ['[data-testid=open-signup]'], waitFor: '[role=dialog]' },
+    ];
+    expect(configSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('rejects scenario path that does not start with /', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [{ label: 'X', path: 'login' }];
+    expect(configSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('rejects scenario with empty setup selector', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [{ label: 'X', path: '/', setup: [''] }];
+    expect(configSchema.safeParse(data).success).toBe(false);
+  });
 });
 
 describe('loadConfig', () => {

@@ -71,6 +71,35 @@
         }
       }
     },
+    "scenarios": {
+      "type": "array",
+      "description": "Optional interaction-driven captures (modals, drawers, toasts, themed variants) that aren't reachable by URL alone. Each scenario navigates to `path`, runs each selector in `setup` as a click, then captures.",
+      "items": {
+        "type": "object",
+        "required": ["label", "path"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable name for the Figma frame (e.g., 'Sign up modal', 'Dashboard — empty state')."
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^/",
+            "description": "Path to navigate to before running setup clicks."
+          },
+          "setup": {
+            "type": "array",
+            "description": "CSS selectors to click in order before capture. Each click auto-waits up to 30s for the selector to be actionable.",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "waitFor": {
+            "type": "string",
+            "description": "Optional CSS selector to wait for after setup clicks, before capturing."
+          }
+        }
+      }
+    },
     "git": {
       "type": "object",
       "description": "Optional git workflow integration. Omit entirely to disable git suggestions.",

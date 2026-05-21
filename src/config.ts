@@ -27,6 +27,16 @@ export const configSchema = z.object({
       }),
     )
     .min(1, 'at least one route is required'),
+  scenarios: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        path: z.string().regex(/^\//, "path must start with '/'"),
+        setup: z.array(z.string().min(1)).optional(),
+        waitFor: z.string().optional(),
+      }),
+    )
+    .optional(),
   git: z
     .object({
       branchPerRound: z.enum(['ask', 'always', 'never']).default('ask'),

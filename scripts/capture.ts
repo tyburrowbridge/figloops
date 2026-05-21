@@ -10,12 +10,20 @@ export interface CaptureRoute {
   waitFor?: string;
 }
 
+export interface CaptureScenario {
+  label: string;
+  path: string;
+  setup?: string[];
+  waitFor?: string;
+}
+
 export interface CaptureArgs {
   outputDir: string;
   viewport: { width: number; height: number };
   baseUrl: string;
   waitFor: 'networkidle' | 'load' | 'domcontentloaded';
   routes: CaptureRoute[];
+  scenarios?: CaptureScenario[];
 }
 
 export interface CaptureResult {
@@ -36,13 +44,24 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
     const captures: CaptureResult['captures'] = [];
     const failed: CaptureResult['failed'] = [];
 
-    for (let i = 0; i < args.routes.length; i++) {
-      const r = args.routes[i];
+    // Routes first, then scenarios — both produce numbered captures in one list.
+    const items: Array<CaptureRoute & { setup?: string[] }> = [
+      ...args.routes,
+      ...(args.scenarios ?? []),
+    ];
+
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i];
       const url = new URL(r.path, args.baseUrl).toString();
       const filename = `${String(i + 1).padStart(2, '0')}-${slug(r.label)}.png`;
       const out = join(args.outputDir, filename);
       try {
         await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
+        for (const sel of r.setup ?? []) {
+          // Auto-waits for the element to be actionable. 10s is enough for any
+          // post-navigation interaction; longer just stalls broken scenarios.
+          await page.click(sel, { timeout: 10_000 });
+        }
         if (r.waitFor) {
           await page.waitForSelector(r.waitFor, { timeout: 10_000 });
         }
@@ -74,13 +93,24 @@ async function main() {
     baseUrl: config.devServer.url,
     waitFor: config.devServer.waitFor,
     routes: config.routes.map((r) => ({ label: r.label, path: r.path, waitFor: r.waitFor })),
+    scenarios: config.scenarios?.map((s) => ({
+      label: s.label,
+      path: s.path,
+      setup: s.setup,
+      waitFor: s.waitFor,
+    })),
   });
 
-  // Persist into state.json for the current round
+  // Persist into state.json for the current round.
+  // Look up the URL path from either routes or scenarios by label.
+  const labelToPath = new Map<string, string>([
+    ...config.routes.map((r) => [r.label, r.path] as const),
+    ...(config.scenarios ?? []).map((s) => [s.label, s.path] as const),
+  ]);
   const round = currentRoundData(state);
   round.captures = result.captures.map<StateCapture>((c) => ({
     label: c.label,
-    path: config.routes.find((r) => r.label === c.label)!.path,
+    path: labelToPath.get(c.label)!,
     filename: c.filename,
   }));
   writeState(statePath, state);
