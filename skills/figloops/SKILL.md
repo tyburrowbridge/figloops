@@ -54,13 +54,13 @@ The init wizard refuses to complete until every external check passes.
 1. **MCP preflight** (above). On failure, abort here.
 
 2. **Create the setup checklist.** Call `TaskCreate` 5 times in a single message (all `pending`) so the user can track wizard progress:
-   - `[figloops setup] Verify Figma MCP`
-   - `[figloops setup] Authenticate with Figma`
-   - `[figloops setup] Connect Figma file`
-   - `[figloops setup] Configure project settings`
-   - `[figloops setup] Initialize figloops`
+   - `[figloops setup] 1. Verify Figma MCP`
+   - `[figloops setup] 2. Authenticate with Figma`
+   - `[figloops setup] 3. Connect Figma file`
+   - `[figloops setup] 4. Configure project settings`
+   - `[figloops setup] 5. Initialize figloops`
 
-   Immediately mark `[figloops setup] Verify Figma MCP` as `completed` (MCP preflight already passed).
+   Immediately mark `[figloops setup] 1. Verify Figma MCP` as `completed` (MCP preflight already passed).
 
 3. **Figma file readiness check.** Use `AskUserQuestion`:
 
@@ -79,12 +79,12 @@ The init wizard refuses to complete until every external check passes.
 
 4. **Determine `<PLUGIN_DIR>`.** It is this skill's parent directory's parent (i.e., `.../figloops`). If `FIGLOOPS_PLUGIN_DIR` is not already set, print the resolved absolute path and tell the user you'll write it into `.env` later.
 
-5. **Figma PAT validation.** Mark `[figloops setup] Authenticate with Figma` as `in_progress`.
+5. **Figma PAT validation.** Mark `[figloops setup] 2. Authenticate with Figma` as `in_progress`.
 
    **5a. Upfront check — look for an existing token before asking anything:**
    - Check `process.env.FIGMA_TOKEN` (shell environment).
    - If not in shell env, check if `.env` exists in cwd and contains a `FIGMA_TOKEN=` line; extract the value.
-   - If a token is found either way, silently validate it (step 5c below). On success, tell the user: `"Found an existing FIGMA_TOKEN — validated successfully."` Mark `[figloops setup] Authenticate with Figma` as `completed` and skip to step 6.
+   - If a token is found either way, silently validate it (step 5c below). On success, tell the user: `"Found an existing FIGMA_TOKEN — validated successfully."` Mark `[figloops setup] 2. Authenticate with Figma` as `completed` and skip to step 6.
    - On validation failure, tell the user the token is invalid and continue to step 5b.
 
    **5b. If no valid token was found, use `AskUserQuestion`:**
@@ -111,9 +111,9 @@ The init wizard refuses to complete until every external check passes.
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getMe({ token: process.env.FIGMA_TOKEN }).then(me => console.log(JSON.stringify(me)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
-   Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet. On failure (401 / network), abort init with the error message + `https://www.figma.com/developers/api#access-tokens`. On success, mark `[figloops setup] Authenticate with Figma` as `completed`.
+   Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet. On failure (401 / network), abort init with the error message + `https://www.figma.com/developers/api#access-tokens`. On success, mark `[figloops setup] 2. Authenticate with Figma` as `completed`.
 
-6. **Figma file URL validation.** Mark `[figloops setup] Connect Figma file` as `in_progress`. Ask the user to paste their Figma file URL. Accept any of:
+6. **Figma file URL validation.** Mark `[figloops setup] 3. Connect Figma file` as `in_progress`. Ask the user to paste their Figma file URL. Accept any of:
    - `https://www.figma.com/file/<KEY>/<NAME>`
    - `https://www.figma.com/design/<KEY>/<NAME>`
    - `https://www.figma.com/proto/<KEY>/<NAME>`
@@ -124,9 +124,9 @@ The init wizard refuses to complete until every external check passes.
    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getFile({ fileKey: '<KEY>', token: process.env.FIGMA_TOKEN }).then(f => console.log(JSON.stringify(f)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
-   On 403/404, surface the error and re-prompt for a corrected URL. On success, mark `[figloops setup] Connect Figma file` as `completed`.
+   On 403/404, surface the error and re-prompt for a corrected URL. On success, mark `[figloops setup] 3. Connect Figma file` as `completed`.
 
-7. **Project config.** Mark `[figloops setup] Configure project settings` as `in_progress`. Collect settings in this order using `AskUserQuestion` for each:
+7. **Project config.** Mark `[figloops setup] 4. Configure project settings` as `in_progress`. Collect settings in this order using `AskUserQuestion` for each:
 
    **7a. Dev server URL** — use `AskUserQuestion`:
    ```
@@ -310,7 +310,7 @@ The init wizard refuses to complete until every external check passes.
 
    Store the choice as `ask`, `always`, or `never` for step 8.
 
-   Mark `[figloops setup] Configure project settings` as `completed` once the route list is finalized.
+   Mark `[figloops setup] 4. Configure project settings` as `completed` once the route list is finalized.
 
 8. **Write `figloops.config.json`** in the cwd. Include the `git` block only if step 7e ran (i.e., cwd is a git repo); omit it entirely otherwise.
 
@@ -332,24 +332,24 @@ The init wizard refuses to complete until every external check passes.
    FIGLOOPS_PLUGIN_DIR=<PLUGIN_DIR>
    ```
 
-10. **Initialize state.** Mark `[figloops setup] Initialize figloops` as `in_progress`. Run:
+10. **Initialize state.** Mark `[figloops setup] 5. Initialize figloops` as `in_progress`. Run:
 
     ```bash
     <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
     ```
 
-    Mark `[figloops setup] Initialize figloops` as `completed`.
+    Mark `[figloops setup] 5. Initialize figloops` as `completed`.
 
 11. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
-    - `[figloops] Capture screenshots`
-    - `[figloops] Push to Figma`
-    - `[figloops] Wait for user comments`
-    - `[figloops] Pull comments`
-    - `[figloops] Review comments`
-    - `[figloops] Cluster themes`
-    - `[figloops] Approve plan`
-    - `[figloops] Implement changes`
-    - `[figloops] Close round`
+    - `[figloops] 1. Capture screenshots`
+    - `[figloops] 2. Push to Figma`
+    - `[figloops] 3. Wait for user comments`
+    - `[figloops] 4. Pull comments`
+    - `[figloops] 5. Review comments`
+    - `[figloops] 6. Cluster themes`
+    - `[figloops] 7. Approve plan`
+    - `[figloops] 8. Implement changes`
+    - `[figloops] 9. Close round`
 
 12. **Print the "ready" summary** to the user:
 
@@ -372,7 +372,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `capture`
 
-1. Mark task `[figloops] Capture screenshots` as `in_progress` via `TaskUpdate`.
+1. Mark task `[figloops] 1. Capture screenshots` as `in_progress` via `TaskUpdate`.
 2. Run:
 
    ```bash
@@ -417,7 +417,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `push`
 
-1. Mark `[figloops] Push to Figma` as `in_progress`.
+1. Mark `[figloops] 2. Push to Figma` as `in_progress`.
 2. Run:
 
    ```bash
@@ -460,7 +460,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `await-comments`
 
-1. Mark `[figloops] Wait for user comments` as `in_progress`.
+1. Mark `[figloops] 3. Wait for user comments` as `in_progress`.
 2. Run pull script (it's safe to call when there are no comments yet):
 
    ```bash
@@ -479,14 +479,14 @@ The init wizard refuses to complete until every external check passes.
 
 (Reached when await-comments succeeded.)
 
-1. Mark `[figloops] Pull comments` as `in_progress`.
+1. Mark `[figloops] 4. Pull comments` as `in_progress`.
 2. (Comments are already in `state.json` from the await-comments handler's pull invocation. No additional work needed.)
 3. Regenerate snapshot.
 4. Mark task complete. Advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts comment-review`. Continue at `comment-review`.
 
 ### Phase handler: `comment-review`
 
-1. Mark `[figloops] Review comments` as `in_progress`.
+1. Mark `[figloops] 5. Review comments` as `in_progress`.
 2. Read `feedback/state.json`. Render the comments grouped by frame:
 
    ```
@@ -522,7 +522,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `cluster`
 
-1. Mark `[figloops] Cluster themes` as `in_progress`.
+1. Mark `[figloops] 6. Cluster themes` as `in_progress`.
 2. Read `feedback/state.json`. Cluster the current round's comments by inferred semantic theme. Do not group by frame or by author. One theme may span multiple frames.
 3. Build the `themes` array and a proposed `plan` array. Each plan item gets:
    - `id`: `p1`, `p2`, `p3`, ... in order
@@ -545,7 +545,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `plan-approval`
 
-1. Mark `[figloops] Approve plan` as `in_progress`.
+1. Mark `[figloops] 7. Approve plan` as `in_progress`.
 2. Read state. Render the plan as a markdown table per theme — `### Theme: <name>` header, then a `| # | Change | Drives from |` table with one row per plan item in that theme. Use the global item numbering (across all themes) for the `#` column so the item-picking menus map cleanly. Escape any `|` in cell content as `\|` and replace newlines with spaces.
 
    ```
@@ -597,7 +597,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `implement`
 
-1. Mark `[figloops] Implement changes` as `in_progress`.
+1. Mark `[figloops] 8. Implement changes` as `in_progress`.
 
 2. **Git branch handling.** Only runs on the first entry into `implement` for this round (skip if `state.rounds[currentRound].git?.branch` is already set — see step 2e). Resolve the mode:
 
@@ -688,7 +688,7 @@ The init wizard refuses to complete until every external check passes.
 
 ### Phase handler: `close`
 
-1. Mark `[figloops] Close round` as `in_progress`.
+1. Mark `[figloops] 9. Close round` as `in_progress`.
 2. Compute today's date (UTC YYYY-MM-DD).
 3. Run:
 
