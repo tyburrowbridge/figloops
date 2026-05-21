@@ -17,6 +17,13 @@ The user runs slash commands in a consuming repo, not in the plugin's repo. The 
 
 For the rest of this skill, when you see `<PLUGIN_DIR>` or `<CONSUMING_REPO>` in commands, substitute the actual absolute path **wrapped in double quotes** — both paths may contain spaces. Run TS scripts as: `cd "<CONSUMING_REPO>" && ""<PLUGIN_DIR>/node_modules/.bin/tsx"" "<PLUGIN_DIR>/scripts/<name>.ts" <args>`. Never use backslash-escaped spaces in paths — always quote instead.
 
+## Style conventions
+
+These rules apply to every user-facing message in this skill:
+
+- **AskUserQuestion options carry no descriptions.** Labels are written to stand alone. When invoking the tool, pass `description: ""` for every option — the YAML option lists in this file deliberately omit a description field.
+- **Structured output uses markdown tables, not bullet lists.** Anything with 2+ comparable fields (paths, statuses, comments, items) gets rendered as a markdown table — the UI renders them as real tables and they're easier to scan. Escape any `|` in cell content as `\|` and flatten newlines to spaces.
+
 ## MCP preflight (used by init + every non-status invocation of next)
 
 Before any phase that touches Figma:
@@ -69,9 +76,7 @@ The init wizard refuses to complete until every external check passes.
    header: "Figma file"
    options:
      - label: "Yes — I have a file ready"
-       description: "You'll paste the URL in the next step."
      - label: "No — I need to create one first"
-       description: "Open Figma, create a fresh dedicated file, then re-run /figloops:init."
    ```
 
    - If **"No"**: print `Open Figma, create a new file, then re-run /figloops:init.` and abort.
@@ -94,11 +99,8 @@ The init wizard refuses to complete until every external check passes.
    header: "Figma PAT"
    options:
      - label: "I already have one — I'll paste it now"
-       description: "You have a PAT from a previous project. Paste it and figloops will validate it."
      - label: "I need to create one"
-       description: "Use 'Read and write' scope for files and comments. Re-run /figloops:init when done."
      - label: "It's already in my shell / .env"
-       description: "figloops will read FIGMA_TOKEN from your environment right now."
    ```
 
    - **"I already have one"**: prompt them to paste the token as plain text in their next message.
@@ -134,13 +136,9 @@ The init wizard refuses to complete until every external check passes.
    header: "Dev server"
    options:
      - label: "http://localhost:3000"
-       description: "Create React App, Next.js default, Rails"
      - label: "http://localhost:5173"
-       description: "Vite default"
      - label: "http://localhost:8080"
-       description: "Vue CLI, webpack-dev-server"
      - label: "http://localhost:4200"
-       description: "Angular CLI"
    ```
    The "Other" option (auto-provided) lets the user type a custom URL.
 
@@ -150,13 +148,9 @@ The init wizard refuses to complete until every external check passes.
    header: "Viewport"
    options:
      - label: "1440 × 900  (Recommended)"
-       description: "Standard widescreen laptop — good default for most web apps."
      - label: "1920 × 1080"
-       description: "Full HD / large desktop monitor."
      - label: "1280 × 800"
-       description: "Smaller laptop screen."
      - label: "390 × 844"
-       description: "iPhone 14 / mobile portrait."
    ```
    The "Other" option lets the user type `width x height` (parse both formats: `1440x900` or `1440 x 900`).
 
@@ -166,9 +160,7 @@ The init wizard refuses to complete until every external check passes.
    header: "Changelog page"
    options:
      - label: "Changelog  (Recommended)"
-       description: "figloops will write round summaries to a page named 'Changelog'."
      - label: "Something else"
-       description: "Type a custom page name."
    ```
    If **"Something else"**: prompt for the name as plain text.
 
@@ -217,19 +209,23 @@ The init wizard refuses to complete until every external check passes.
    ```
    Extract `href` values that look like internal paths (start with `/`, no protocol). Use those as candidates. If even that yields nothing, fall back to asking the user for routes in plain text (original approach).
 
-   **7d-iii. Present the discovered list** in a formatted message before asking anything:
+   **7d-iii. Present the discovered list** as a table before asking anything:
 
    ```
    Found N routes in your <framework> project:
 
-     /               → Home
-     /login          → Login
-     /dashboard      → Dashboard
-     /dashboard/settings → Settings
-     ...
+   | Path | Label |
+   |---|---|
+   | / | Home |
+   | /login | Login |
+   | /dashboard | Dashboard |
+   | /dashboard/settings | Settings |
 
    Skipped (dynamic — no fixed URL to capture):
-     /products/[id]
+
+   | Path | Reason |
+   |---|---|
+   | /products/[id] | dynamic segment |
    ```
 
    **7d-iv. Optional: probe the dev server for stale routes.** Routes discovered from source can be dead code (orphaned files, abandoned features, behind a removed flag). If the dev server is running we can flag them. Use `AskUserQuestion`:
@@ -239,9 +235,7 @@ The init wizard refuses to complete until every external check passes.
    header: "Probe dev server"
    options:
      - label: "Yes — probe it"
-       description: "figloops will GET each discovered route and flag any that 404 or aren't linked from /."
      - label: "Not running — skip"
-       description: "Continue with the source-only list. You can edit it now or re-run /figloops:init later."
    ```
 
    - **"Yes — probe it"**: build the stdin payload `{ "baseUrl": "<URL>", "routes": [{"label": "...", "path": "..."}, ...] }` from the discovered list, then run:
@@ -258,17 +252,16 @@ The init wizard refuses to complete until every external check passes.
        ```
        Probed <URL> — flagging possibly-stale routes:
 
-         /                ✓ 200    linked
-         /login           ✓ 200    linked
-         /dashboard       ✓ 200    linked
-         /reports         ⚠ 404    likely stale — keep anyway?
-         /admin           ✓ 200    not linked from /  (might be intentional)
-         /old-checkout    ✗ refused  unreachable — keep anyway?
+       | Path | Status | Linked from / | Notes |
+       |---|---|---|---|
+       | / | ✓ 200 | yes | |
+       | /login | ✓ 200 | yes | |
+       | /dashboard | ✓ 200 | yes | |
+       | /reports | ⚠ 404 | — | likely stale — keep anyway? |
+       | /admin | ✓ 200 | no | might be intentional |
+       | /old-checkout | ✗ refused | — | unreachable — keep anyway? |
 
-       Legend:
-         ✓ = 2xx/3xx, ⚠ = 404, ✗ = connection failed
-         "linked" = found in an <a href> on /
-         "not linked from /" = exists but not discoverable from your entry page
+       Legend: ✓ 2xx/3xx · ⚠ 404 · ✗ connection failed · "linked from /" = found in an `<a href>` on the entry page.
        ```
 
        Notes:
@@ -284,13 +277,9 @@ The init wizard refuses to complete until every external check passes.
    header: "Route list"
    options:
      - label: "Capture all of them"
-       description: "Use the full discovered list as-is (including any flagged as possibly stale)."
      - label: "Remove some"
-       description: "Tell me which paths to drop and I'll update the list."
      - label: "Add more"
-       description: "I'll add any routes that weren't detected (e.g. modals via ?modal=...)."
      - label: "Start fresh"
-       description: "Ignore the discovered list — I'll provide my own."
    ```
 
    - **"Capture all"**: use the list as-is.
@@ -323,9 +312,7 @@ The init wizard refuses to complete until every external check passes.
    header: "Scenarios"
    options:
      - label: "Yes — add some now"
-       description: "Walk me through adding one or more. You'll define a label, a path, and any setup-click selectors."
      - label: "Skip — I'll add them later"
-       description: "figloops will only capture routes. You can edit figloops.config.json to add scenarios any time."
    ```
 
    **7e-iii. If "Yes — add some now":** prompt as plain text:
@@ -362,11 +349,8 @@ The init wizard refuses to complete until every external check passes.
    header: "Confirm scenarios"
    options:
      - label: "Add them all"
-       description: "Append the scenarios to the config."
      - label: "Start over"
-       description: "Discard and re-enter."
      - label: "Skip — add none"
-       description: "Skip scenarios; figloops will only capture routes."
    ```
 
    Apply the choice. The scenarios are written to the `scenarios` array in step 8.
@@ -386,11 +370,8 @@ The init wizard refuses to complete until every external check passes.
    header: "Git branches"
    options:
      - label: "Ask me each round  (Recommended)"
-       description: "At the implement gate, figloops will offer to create figloops/round-N-<date>."
      - label: "Always create one"
-       description: "Auto-create figloops/round-N-<date> at the implement gate, no prompt."
      - label: "Never — I'll manage git myself"
-       description: "figloops won't touch git. Suitable for solo prototyping or trunk-based dev."
    ```
 
    Store the choice as `ask`, `always`, or `never` for step 8.
@@ -503,11 +484,8 @@ The init wizard refuses to complete until every external check passes.
    header: "Preview"
    options:
      - label: "Approve — push to Figma  (Recommended)"
-       description: "Upload the screenshots and lay them out on a new Round <round> page."
      - label: "Re-capture"
-       description: "Run the capture again (e.g. if the dev server state was wrong)."
      - label: "Cancel"
-       description: "Stop here. State stays in capture; re-run /figloops:next when ready."
    ```
 
 5. On `"Approve — push to Figma"`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts push`. Then continue at the `push` handler.
@@ -586,17 +564,16 @@ The init wizard refuses to complete until every external check passes.
 ### Phase handler: `comment-review`
 
 1. Mark `[figloops] Review comments` as `in_progress`.
-2. Read `feedback/state.json`. Render the comments grouped by frame:
+2. Read `feedback/state.json`. Render comments as a single table sorted by frame label, then by insertion order within each frame. Escape any `|` in cells and flatten newlines.
 
    ```
    Round <round> — Comments to review (<N> total)
 
-   Frame "01 - Login":
-     - Sarah Lee (#12): "The CTA below the form is hard to find."
-     - Mike Chen (#17): "Form copy is unclear; add helper text."
-
-   Frame "02 - Dashboard":
-     - Sarah Lee (#23): "Nav doesn't show what's active."
+   | # | Frame | Author | Comment |
+   |---|---|---|---|
+   | 12 | 01 - Login | Sarah Lee | The CTA below the form is hard to find. |
+   | 17 | 01 - Login | Mike Chen | Form copy is unclear; add helper text. |
+   | 23 | 02 - Dashboard | Sarah Lee | Nav doesn't show what's active. |
 
    Your Figma file: <URL>
    ```
@@ -608,11 +585,8 @@ The init wizard refuses to complete until every external check passes.
    header: "Review comments"
    options:
      - label: "Continue to clustering  (Recommended)"
-       description: "You've read everything you need. Advance to clustering themes."
      - label: "Pull again"
-       description: "Re-fetch from Figma in case more comments arrived since the last pull."
      - label: "Cancel round"
-       description: "Abort the round; state reverts to await-comments so you can re-run /figloops:next later."
    ```
 
 4. On `"Continue to clustering"`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts cluster`. Continue at `cluster` handler.
@@ -671,13 +645,9 @@ The init wizard refuses to complete until every external check passes.
    header: "Approve plan"
    options:
      - label: "Approve all"
-       description: "Every proposed item → approved. Advance to implementation."
      - label: "Approve some only"
-       description: "Pick item numbers to approve; the rest will be rejected."
      - label: "Edit one"
-       description: "Rewrite a single item's change text, then re-prompt for approval."
      - label: "Reject all"
-       description: "No items approved. Close the round with an empty changelog note."
    ```
 
 4. Apply the choice (use the pagination patterns described under **Item-picking menus** below for any sub-prompt that picks one or many items):
@@ -712,16 +682,13 @@ The init wizard refuses to complete until every external check passes.
    header: "Git branch"
    options:
      - label: "Yes — create figloops/round-<round>-<YYYY-MM-DD>  (Recommended)"
-       description: "figloops will branch from your current HEAD and switch to it."
      - label: "No — stay on current branch"
-       description: "I'll commit directly to whatever I'm on now."
-     - label: "Never ask again"
-       description: "Skip git for this round AND update figloops.config.json to git.branchPerRound: never."
+     - label: "Never ask again (sets git.branchPerRound: never)"
    ```
 
    - `"Yes"`: continue to step 2c.
    - `"No"`: skip to step 3.
-   - `"Never ask again"`: edit `figloops.config.json` to set `"git": { "branchPerRound": "never" }`, then skip to step 3.
+   - `"Never ask again (sets git.branchPerRound: never)"`: edit `figloops.config.json` to set `"git": { "branchPerRound": "never" }`, then skip to step 3.
 
    **2c. If mode is `"always"` or the user chose "Yes":** check for uncommitted changes:
 
@@ -755,14 +722,16 @@ The init wizard refuses to complete until every external check passes.
 
    (No dedicated CLI for this — read state.json, set the field, write it back. The state schema accepts unknown fields via passthrough; if validation rejects, surface the error rather than silently dropping.)
 
-3. Read state. List approved items with status:
+3. Read state. List approved items with status as a table:
 
    ```
    Round <round> — Implementing (<shipped> of <approved> shipped)
 
-   [✓] 1. Add breadcrumbs to Dashboard
-   [ ] 2. Highlight active nav item
-   [ ] 3. Increase contrast on secondary buttons
+   | # | Status | Change |
+   |---|---|---|
+   | 1 | ✓ shipped | Add breadcrumbs to Dashboard |
+   | 2 | — pending | Highlight active nav item |
+   | 3 | — pending | Increase contrast on secondary buttons |
    ```
 
 4. Use `AskUserQuestion`:
@@ -772,9 +741,7 @@ The init wizard refuses to complete until every external check passes.
    header: "Implement"
    options:
      - label: "Mark items as shipped"
-       description: "Pick which items you've finished implementing."
      - label: "Close round"
-       description: "Close now; any remaining approved items become 'dropped'."
    ```
 
 5. Apply the choice:
@@ -851,13 +818,19 @@ Use when the user picks **zero or more** items from a list of any length (e.g. p
    Print:
 
    ```
-   You picked these items to <verb> (N selected):
-     1. <change text>
-     3. <change text>
+   Selected to <verb> (N):
 
-   These items will NOT be <verbed> (M remaining):
-     2. <change text>
-     4. <change text>
+   | # | Change |
+   |---|---|
+   | 1 | <change text> |
+   | 3 | <change text> |
+
+   NOT <verbed> (M):
+
+   | # | Change |
+   |---|---|
+   | 2 | <change text> |
+   | 4 | <change text> |
    ```
 
    Then `AskUserQuestion`:
@@ -867,11 +840,8 @@ Use when the user picks **zero or more** items from a list of any length (e.g. p
    header: "Confirm"
    options:
      - label: "Submit  (Recommended)"
-       description: "Apply the selections above."
      - label: "Start over"
-       description: "Clear all selections and re-pick from page 1."
      - label: "Cancel"
-       description: "Discard selections and return to the gate's top menu."
    ```
 
    - `"Submit"`: return the accumulated selections.
@@ -902,11 +872,8 @@ Use when the user picks **exactly one** item from a list of any length (e.g. pla
    header: "Confirm"
    options:
      - label: "Submit  (Recommended)"
-       description: "Continue with the item above."
      - label: "Pick a different item"
-       description: "Re-paginate from page 1 and pick again."
      - label: "Cancel"
-       description: "Discard and return to the gate's top menu."
    ```
 
    - `"Submit"`: return the picked item.
