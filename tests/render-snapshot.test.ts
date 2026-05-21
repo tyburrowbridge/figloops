@@ -85,6 +85,35 @@ describe('renderSnapshot', () => {
     expect(md).toContain('Mike Chen (#17)');
   });
 
+  it('renders themes as a markdown table with Theme / Cites / Summary columns', () => {
+    const md = renderSnapshot(baseState, 2);
+    expect(md).toContain('| Theme | Cites | Summary |');
+    expect(md).toContain('|---|---|---|');
+    expect(md).toMatch(/\| Navigation clarity \| .*Sarah Lee \(#12\).*Mike Chen \(#17\).* \| Stakeholders struggled to orient inside the app\. \|/);
+  });
+
+  it('escapes pipes and newlines in theme cells', () => {
+    const stateWithMessyTheme: State = {
+      ...baseState,
+      rounds: {
+        '2': {
+          ...baseState.rounds['2'],
+          themes: [
+            {
+              name: 'A | B',
+              commentIds: ['12'],
+              summary: 'line 1\nline 2',
+            },
+          ],
+        },
+      },
+    };
+    const md = renderSnapshot(stateWithMessyTheme, 2);
+    expect(md).toContain('| A \\| B |');
+    expect(md).toContain('line 1 line 2');
+    expect(md).not.toContain('line 1\nline 2');
+  });
+
   it('renders plan items with shipped/pending checkboxes', () => {
     const md = renderSnapshot(baseState, 2);
     expect(md).toContain('[✓] Add breadcrumbs to Dashboard');

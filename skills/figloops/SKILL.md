@@ -546,20 +546,23 @@ The init wizard refuses to complete until every external check passes.
 ### Phase handler: `plan-approval`
 
 1. Mark `[figloops] Approve plan` as `in_progress`.
-2. Read state. Render the plan as numbered items grouped by theme:
+2. Read state. Render the plan as a markdown table per theme — `### Theme: <name>` header, then a `| # | Change | Drives from |` table with one row per plan item in that theme. Use the global item numbering (across all themes) for the `#` column so the item-picking menus map cleanly. Escape any `|` in cell content as `\|` and replace newlines with spaces.
 
    ```
    Round <round> — Plan approval
 
-   Theme: Navigation clarity
-     1. Add breadcrumbs to Dashboard
-        Drives from: Sarah Lee (#12), Mike Chen (#17)
-     2. Highlight active nav item
-        Drives from: Sarah Lee (#23)
+   ### Theme: Navigation clarity
 
-   Theme: Color contrast
-     3. Increase contrast on secondary buttons
-        Drives from: Anita Roy (#41), Mike Chen (#44)
+   | # | Change | Drives from |
+   |---|---|---|
+   | 1 | Add breadcrumbs to Dashboard | Sarah Lee (#12), Mike Chen (#17) |
+   | 2 | Highlight active nav item | Sarah Lee (#23) |
+
+   ### Theme: Color contrast
+
+   | # | Change | Drives from |
+   |---|---|---|
+   | 3 | Increase contrast on secondary buttons | Anita Roy (#41), Mike Chen (#44) |
    ```
 
 3. Use `AskUserQuestion`:

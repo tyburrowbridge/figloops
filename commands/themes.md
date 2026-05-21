@@ -32,11 +32,14 @@ Then, iterating rounds in numeric order from `1` up to `currentRound`, render ea
 
 **Round body:**
 - If the round has 0 themes: print `_no themes yet_` then a blank line. Continue to next round.
-- Otherwise, for each theme in `round.themes` (preserve order):
-  - Print `### <theme.name>`
-  - Print `Cites: <comma-separated citations>` where each citation is `<authorName> (#<id>)` — look each `id` up in `round.comments` and use that comment's `authorName`. If a cited id is not found in `round.comments`, fall back to `#<id>`.
-  - Print `Summary: <theme.summary>`
-  - Print a blank line after each theme.
+- Otherwise, render a single markdown table for the round with one row per theme:
+  - Header row: `| Theme | Cites | Summary |` then the separator `|---|---|---|`.
+  - For each theme in `round.themes` (preserve order):
+    - **Theme**: `theme.name`
+    - **Cites**: comma-separated `<authorName> (#<id>)` — look each id up in `round.comments` and use that comment's `authorName`. If a cited id is not found, fall back to `#<id>`.
+    - **Summary**: `theme.summary`
+  - Replace any `|` in cell content with `\|` and any newline with a space to keep the table valid.
+- Print a blank line after the table.
 
 Print one blank line between rounds.
 
@@ -46,13 +49,11 @@ Print one blank line between rounds.
 # figloops · themes history
 
 ## Round 1 — closed 2026-05-12
-### Navigation clarity
-Cites: Sarah Lee (#12), Mike Chen (#17)
-Summary: stakeholders struggled to orient inside the app.
 
-### Color contrast
-Cites: Anita Roy (#41)
-Summary: secondary buttons read as disabled because contrast is too low.
+| Theme | Cites | Summary |
+|---|---|---|
+| Navigation clarity | Sarah Lee (#12), Mike Chen (#17) | stakeholders struggled to orient inside the app. |
+| Color contrast | Anita Roy (#41) | secondary buttons read as disabled because contrast is too low. |
 
 ## Round 2 — in progress (phase: cluster)
 _no themes yet_

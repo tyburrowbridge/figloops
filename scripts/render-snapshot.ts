@@ -49,18 +49,22 @@ function renderComments(round: RoundData): string {
   return lines.join('\n');
 }
 
+function escapeCell(s: string): string {
+  return s.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
 function renderThemes(round: RoundData): string {
   if (round.themes.length === 0) {
     return '_no themes yet_';
   }
-  const lines: string[] = [];
+  const lines: string[] = ['| Theme | Cites | Summary |', '|---|---|---|'];
   for (const t of round.themes) {
-    lines.push(`### ${t.name}`);
-    lines.push(`Cites: ${citeMany(round.comments, t.commentIds)}`);
-    lines.push(`Summary: ${t.summary}`);
-    lines.push('');
+    const name = escapeCell(t.name);
+    const cites = escapeCell(citeMany(round.comments, t.commentIds));
+    const summary = escapeCell(t.summary);
+    lines.push(`| ${name} | ${cites} | ${summary} |`);
   }
-  return lines.join('\n').trimEnd();
+  return lines.join('\n');
 }
 
 function renderPlan(round: RoundData): string {
