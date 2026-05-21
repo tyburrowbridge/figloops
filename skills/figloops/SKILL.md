@@ -300,6 +300,8 @@ The init wizard refuses to complete until every external check passes.
 
    Require at least 1 route before continuing.
 
+   **Path normalization (apply before continuing):** For every route in the final list, ensure the path starts with `/`. If a path is missing the leading slash (e.g. `?tab=reports`, `dashboard`), prepend `/` silently — do not re-prompt. The config validator will reject paths without a leading `/`.
+
    **7e. Discover scenarios beyond routes (modals, themed variants, etc.).**
 
    Routes capture top-level pages. **Scenarios** capture states that aren't reachable by URL alone — modals/dialogs, drawers, toasts, dark mode, empty/error states. They're optional; users can add them now or later by editing `figloops.config.json`.
