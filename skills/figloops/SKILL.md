@@ -345,7 +345,7 @@ The init wizard refuses to complete until every external check passes.
    <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/render-snapshot.ts
    ```
 
-4. Present the **preview gate** (Gate 1):
+4. Present the **preview gate** (Gate 1). First print the summary:
 
    ```
    Captured N routes for Round <round>:
@@ -354,13 +354,25 @@ The init wizard refuses to complete until every external check passes.
      ...
    Expected Figma layout on page "Round <round>":
      3 columns wide, rows added as needed.
-
-   Reply with: approve / recapture / cancel
    ```
 
-5. On `approve`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts push`. Then continue at the `push` handler.
-6. On `recapture`: re-run step 2.
-7. On `cancel`: stop here. Do not advance state.
+   Then use `AskUserQuestion`:
+
+   ```
+   question: "Do these captures look right?"
+   header: "Preview"
+   options:
+     - label: "Approve — push to Figma  (Recommended)"
+       description: "Upload the screenshots and lay them out on a new Round <round> page."
+     - label: "Re-capture"
+       description: "Run the capture again (e.g. if the dev server state was wrong)."
+     - label: "Cancel"
+       description: "Stop here. State stays in capture; re-run /figloops:next when ready."
+   ```
+
+5. On `"Approve — push to Figma"`: mark task complete, advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts push`. Then continue at the `push` handler.
+6. On `"Re-capture"`: re-run step 2.
+7. On `"Cancel"`: stop here. Do not advance state.
 
 ### Phase handler: `push`
 
@@ -507,22 +519,32 @@ The init wizard refuses to complete until every external check passes.
    Theme: Color contrast
      3. Increase contrast on secondary buttons
         Drives from: Anita Roy (#41), Mike Chen (#44)
-
-   Reply with one of:
-     approve all
-     approve 1,3        (and reject the rest)
-     edit 2: <new wording>   (re-prompt for approval after edit)
-     reject all         (close round with empty changelog note)
    ```
 
-3. Parse the user's reply:
-   - `approve all`: build a status-update payload with every item `→ approved`.
-   - `approve 1,3`: items 1 and 3 → `approved`, all others → `rejected`.
-   - `edit N: <text>`: pipe an updated `set` payload back through update-plan, regenerate snapshot, re-render the numbered list (stay in phase).
-   - `reject all`: status-update payload with every item → `rejected`. Advance directly to `close` (skip implement).
-4. Apply the update via `update-plan.ts`. Regenerate snapshot.
-5. If any items are approved: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts implement`. Continue at `implement`.
-6. If `reject all`: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
+3. Use `AskUserQuestion`:
+
+   ```
+   question: "How do you want to handle this plan?"
+   header: "Approve plan"
+   options:
+     - label: "Approve all"
+       description: "Every proposed item → approved. Advance to implementation."
+     - label: "Approve some only"
+       description: "Pick item numbers to approve; the rest will be rejected."
+     - label: "Edit one"
+       description: "Rewrite a single item's change text, then re-prompt for approval."
+     - label: "Reject all"
+       description: "No items approved. Close the round with an empty changelog note."
+   ```
+
+4. Apply the choice:
+   - `"Approve all"`: build a status-update payload with every item `→ approved`.
+   - `"Approve some only"`: prompt as plain text — `"Which item numbers should be approved? (e.g. 1,3)"`. Parse comma-separated integers; mark those `→ approved`, all others `→ rejected`.
+   - `"Edit one"`: prompt as plain text — `"Which item number do you want to edit?"` then `"New change text for item N?"`. Pipe an updated `set` payload back through `update-plan.ts`, regenerate snapshot, re-render the numbered list, ask again with the same 4 options.
+   - `"Reject all"`: status-update payload with every item `→ rejected`. Advance directly to `close` (skip implement).
+5. Apply the update via `update-plan.ts`. Regenerate snapshot.
+6. If any items are approved: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts implement`. Continue at `implement`.
+7. If `"Reject all"`: mark task complete; advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
 
 ### Phase handler: `implement`
 
@@ -535,17 +557,24 @@ The init wizard refuses to complete until every external check passes.
    [✓] 1. Add breadcrumbs to Dashboard
    [ ] 2. Highlight active nav item
    [ ] 3. Increase contrast on secondary buttons
-
-   Reply with one of:
-     done 2             (mark item 2 shipped)
-     done 2,3           (mark multiple shipped)
-     close              (close round; remaining approved items become 'dropped')
    ```
 
-3. Parse the user's reply:
-   - `done N` / `done N,M`: build a status-update payload marking those items `→ shipped`. Apply, regenerate snapshot, re-render the list, stay in phase. If now all approved items are `shipped`, auto-advance.
-   - `close`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
-4. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
+3. Use `AskUserQuestion`:
+
+   ```
+   question: "What's your next move?"
+   header: "Implement"
+   options:
+     - label: "Mark items as shipped"
+       description: "Pick which items you've finished implementing."
+     - label: "Close round"
+       description: "Close now; any remaining approved items become 'dropped'."
+   ```
+
+4. Apply the choice:
+   - `"Mark items as shipped"`: prompt as plain text — `"Which item numbers shipped? (e.g. 2 or 2,3)"`. Parse comma-separated integers; build a status-update payload marking those `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 options.
+   - `"Close round"`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
+5. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
 
 ### Phase handler: `close`
 

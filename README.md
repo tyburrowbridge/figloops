@@ -69,14 +69,14 @@ You'll mostly only use `:next`.
 
 | # | Phase | Gate |
 |---|---|---|
-| 1 | Capture screenshots | `approve` / `recapture` / `cancel` |
+| 1 | Capture screenshots | Approve · Re-capture · Cancel |
 | 2 | Push to Figma | — |
 | 3 | Wait for stakeholder comments | re-run `:next` when ready |
 | 4 | Pull comments | — |
-| 5 | Review comments | `continue` / `pull-again` / `cancel` |
+| 5 | Review comments | Continue · Pull again · Cancel |
 | 6 | Cluster themes | — |
-| 7 | Approve plan | `approve all` / `approve 1,3` / `edit 2: …` / `reject all` |
-| 8 | Implement changes | `done 2` / `done 2,3` / `close` |
+| 7 | Approve plan | Approve all · Approve some · Edit one · Reject all |
+| 8 | Implement changes | Mark items shipped · Close round |
 | 9 | Close round | — |
 
 ---
