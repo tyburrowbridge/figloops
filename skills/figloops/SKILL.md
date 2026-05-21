@@ -472,15 +472,28 @@ The init wizard refuses to complete until every external check passes.
    "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/render-snapshot.ts
    ```
 
-4. Present the **preview gate** (Gate 1). First print the summary:
+4. Present the **preview gate** (Gate 1). First print the summary as a markdown table — one row per capture, with columns for the index, filename, source kind (`route` or `scenario`), and the Figma frame name it will become. End with the layout note. Escape any `|` in cell content as `\|`.
 
    ```
-   Captured N routes for Round <round>:
-     01-login.png        → Frame "01 - Login"
-     02-dashboard.png    → Frame "02 - Dashboard"
-     ...
-   Expected Figma layout on page "Round <round>":
-     3 columns wide, rows added as needed.
+   Captured N items for Round <round>:
+
+   | # | Filename | Source | Figma frame |
+   |---|---|---|---|
+   | 01 | `01-login.png` | route | "01 - Login" |
+   | 02 | `02-dashboard.png` | route | "02 - Dashboard" |
+   | 03 | `03-sign-up-modal.png` | scenario | "03 - Sign up modal" |
+
+   Expected Figma layout on page "Round <round>": 3 columns wide, rows added as needed.
+   ```
+
+   If any captures failed (the script returned a non-empty `failed` array), add a second table below showing the failures so the user can decide whether to recapture:
+
+   ```
+   Failed (N):
+
+   | Label | Error |
+   |---|---|
+   | Old checkout | net::ERR_ABORTED at /old-checkout |
    ```
 
    Then use `AskUserQuestion`:
