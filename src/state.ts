@@ -70,6 +70,11 @@ const planItemSchema = z.object({
   status: planStatusSchema,
 });
 
+const roundGitSchema = z.object({
+  branch: z.string().min(1),
+  baseBranch: z.string().min(1),
+});
+
 const roundDataSchema = z.object({
   completedAt: z.string().optional(),
   captures: z.array(captureSchema),
@@ -77,6 +82,7 @@ const roundDataSchema = z.object({
   comments: z.array(commentSchema),
   themes: z.array(themeSchema),
   plan: z.array(planItemSchema),
+  git: roundGitSchema.optional(),
 });
 
 export const stateSchema = z.object({
@@ -88,6 +94,7 @@ export const stateSchema = z.object({
 
 export type State = z.infer<typeof stateSchema>;
 export type RoundData = z.infer<typeof roundDataSchema>;
+export type RoundGit = z.infer<typeof roundGitSchema>;
 export type Capture = z.infer<typeof captureSchema>;
 export type PushManifest = z.infer<typeof pushManifestSchema>;
 export type Comment = z.infer<typeof commentSchema>;

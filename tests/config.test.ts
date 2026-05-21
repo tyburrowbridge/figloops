@@ -44,6 +44,26 @@ describe('configSchema', () => {
     data.routes = [];
     expect(configSchema.safeParse(data).success).toBe(false);
   });
+
+  it('accepts config with no git block (backwards compatible)', () => {
+    const data = readFixture('valid-config.json');
+    expect(data.git).toBeUndefined();
+    expect(configSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('accepts git.branchPerRound of "ask", "always", or "never"', () => {
+    const data = readFixture('valid-config.json');
+    for (const mode of ['ask', 'always', 'never'] as const) {
+      data.git = { branchPerRound: mode };
+      expect(configSchema.safeParse(data).success).toBe(true);
+    }
+  });
+
+  it('rejects an unknown git.branchPerRound value', () => {
+    const data = readFixture('valid-config.json');
+    data.git = { branchPerRound: 'sometimes' };
+    expect(configSchema.safeParse(data).success).toBe(false);
+  });
 });
 
 describe('loadConfig', () => {

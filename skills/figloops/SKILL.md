@@ -286,9 +286,33 @@ The init wizard refuses to complete until every external check passes.
 
    Require at least 1 route before continuing.
 
+   **7e. Git workflow preference (only if cwd is a git repo).** First check:
+
+   ```bash
+   git rev-parse --is-inside-work-tree 2>/dev/null
+   ```
+
+   If the command exits non-zero or prints anything other than `true`, the cwd isn't a git repo — skip this step entirely and don't write a `git` block to the config. The implement phase will silently skip git work.
+
+   If it's a git repo, use `AskUserQuestion`:
+
+   ```
+   question: "How should figloops handle git branches per round?"
+   header: "Git branches"
+   options:
+     - label: "Ask me each round  (Recommended)"
+       description: "At the implement gate, figloops will offer to create figloops/round-N-<date>."
+     - label: "Always create one"
+       description: "Auto-create figloops/round-N-<date> at the implement gate, no prompt."
+     - label: "Never — I'll manage git myself"
+       description: "figloops won't touch git. Suitable for solo prototyping or trunk-based dev."
+   ```
+
+   Store the choice as `ask`, `always`, or `never` for step 8.
+
    Mark `[figloops setup] Configure project settings` as `completed` once the route list is finalized.
 
-8. **Write `figloops.config.json`** in the cwd:
+8. **Write `figloops.config.json`** in the cwd. Include the `git` block only if step 7e ran (i.e., cwd is a git repo); omit it entirely otherwise.
 
    ```json
    {
@@ -296,7 +320,8 @@ The init wizard refuses to complete until every external check passes.
      "devServer": { "url": "<URL>", "waitFor": "networkidle" },
      "viewport": { "width": <W>, "height": <H> },
      "figma": { "fileKey": "<KEY>", "changelogPageName": "<NAME>" },
-     "routes": [ { "label": "<LABEL>", "path": "<PATH>" } ]
+     "routes": [ { "label": "<LABEL>", "path": "<PATH>" } ],
+     "git": { "branchPerRound": "<ask|always|never>" }
    }
    ```
 
@@ -565,7 +590,65 @@ The init wizard refuses to complete until every external check passes.
 ### Phase handler: `implement`
 
 1. Mark `[figloops] Implement changes` as `in_progress`.
-2. Read state. List approved items with status:
+
+2. **Git branch handling.** Only runs on the first entry into `implement` for this round (skip if `state.rounds[currentRound].git?.branch` is already set — see step 2e). Resolve the mode:
+
+   - Read `git.branchPerRound` from `figloops.config.json` (default `"ask"` if the `git` block is absent and the cwd is a git repo; treat as `"never"` if not a git repo).
+   - Verify cwd is a git repo: `git rev-parse --is-inside-work-tree 2>/dev/null`. If non-zero, skip to step 3.
+
+   **2a. If mode is `"never"`:** skip to step 3.
+
+   **2b. If mode is `"ask"`:** use `AskUserQuestion`:
+
+   ```
+   question: "Create a branch for Round <round>'s implementation?"
+   header: "Git branch"
+   options:
+     - label: "Yes — create figloops/round-<round>-<YYYY-MM-DD>  (Recommended)"
+       description: "figloops will branch from your current HEAD and switch to it."
+     - label: "No — stay on current branch"
+       description: "I'll commit directly to whatever I'm on now."
+     - label: "Never ask again"
+       description: "Skip git for this round AND update figloops.config.json to git.branchPerRound: never."
+   ```
+
+   - `"Yes"`: continue to step 2c.
+   - `"No"`: skip to step 3.
+   - `"Never ask again"`: edit `figloops.config.json` to set `"git": { "branchPerRound": "never" }`, then skip to step 3.
+
+   **2c. If mode is `"always"` or the user chose "Yes":** check for uncommitted changes:
+
+   ```bash
+   git status --porcelain
+   ```
+
+   If output is non-empty, abort with:
+
+   > Uncommitted changes detected. Commit or stash them before figloops creates a new branch, then re-run /figloops:next.
+
+   Do not advance state. The user re-runs after handling.
+
+   **2d. Compute branch name.** Use `date '+%Y-%m-%d'` for the date. Base name: `figloops/round-<round>-<date>`. If `git rev-parse --verify <name>` succeeds (branch already exists), append `-2`, `-3`, etc. until unique.
+
+   **2e. Create + switch:**
+
+   ```bash
+   git checkout -b <branch-name>
+   ```
+
+   Capture the previous branch via `git rev-parse --abbrev-ref HEAD` BEFORE the checkout for the record. Tell the user:
+
+   > Switched to new branch `<branch-name>` (from `<previous-branch>`). Implementation work for this round will live here.
+
+   Persist to state so we don't re-prompt on re-entry. Append to `feedback/state.json` under the current round:
+
+   ```json
+   "git": { "branch": "<branch-name>", "baseBranch": "<previous-branch>" }
+   ```
+
+   (No dedicated CLI for this — read state.json, set the field, write it back. The state schema accepts unknown fields via passthrough; if validation rejects, surface the error rather than silently dropping.)
+
+3. Read state. List approved items with status:
 
    ```
    Round <round> — Implementing (<shipped> of <approved> shipped)
@@ -575,7 +658,7 @@ The init wizard refuses to complete until every external check passes.
    [ ] 3. Increase contrast on secondary buttons
    ```
 
-3. Use `AskUserQuestion`:
+4. Use `AskUserQuestion`:
 
    ```
    question: "What's your next move?"
@@ -587,10 +670,10 @@ The init wizard refuses to complete until every external check passes.
        description: "Close now; any remaining approved items become 'dropped'."
    ```
 
-4. Apply the choice:
+5. Apply the choice:
    - `"Mark items as shipped"`: prompt as plain text — `"Which item numbers shipped? (e.g. 2 or 2,3)"`. Parse comma-separated integers; build a status-update payload marking those `→ shipped`. Apply, regenerate snapshot, re-render the list. If all approved items are now `shipped`, auto-advance; otherwise ask again with the same 2 options.
    - `"Close round"`: status-update payload marking all remaining `approved` items as `dropped`. Apply, advance.
-5. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
+6. When advancing: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts close`. Continue at `close`.
 
 ### Phase handler: `close`
 

@@ -27,6 +27,11 @@ export const configSchema = z.object({
       }),
     )
     .min(1, 'at least one route is required'),
+  git: z
+    .object({
+      branchPerRound: z.enum(['ask', 'always', 'never']).default('ask'),
+    })
+    .optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;

@@ -127,3 +127,41 @@ describe('Phase enum', () => {
     expect(() => loadState(path)).toThrow(/currentPhase/);
   });
 });
+
+describe('round.git', () => {
+  it('round-trips an optional git block on a round', () => {
+    const path = join(dir, 'state.json');
+    initState(path);
+    const s = loadState(path);
+    s.rounds['1'].git = { branch: 'figloops/round-1-2026-05-21', baseBranch: 'main' };
+    writeState(path, s);
+    const reloaded = loadState(path);
+    expect(reloaded.rounds['1'].git).toEqual({
+      branch: 'figloops/round-1-2026-05-21',
+      baseBranch: 'main',
+    });
+  });
+
+  it('accepts a round without a git block', () => {
+    const path = join(dir, 'state.json');
+    initState(path);
+    const s = loadState(path);
+    expect(s.rounds['1'].git).toBeUndefined();
+  });
+
+  it('rejects a git block with empty branch name', () => {
+    const path = join(dir, 'state.json');
+    writeFileSync(path, JSON.stringify({
+      schemaVersion: 1,
+      currentRound: 1,
+      currentPhase: 'capture',
+      rounds: {
+        '1': {
+          captures: [], pushManifest: null, comments: [], themes: [], plan: [],
+          git: { branch: '', baseBranch: 'main' },
+        },
+      },
+    }));
+    expect(() => loadState(path)).toThrow(/branch/);
+  });
+});

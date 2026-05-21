@@ -70,6 +70,17 @@
           }
         }
       }
+    },
+    "git": {
+      "type": "object",
+      "description": "Optional git workflow integration. Omit entirely to disable git suggestions.",
+      "properties": {
+        "branchPerRound": {
+          "description": "How the implement gate should handle branching. 'ask' prompts each round, 'always' auto-creates figloops/round-N-<date>, 'never' skips git entirely.",
+          "enum": ["ask", "always", "never"],
+          "default": "ask"
+        }
+      }
     }
   }
 }
