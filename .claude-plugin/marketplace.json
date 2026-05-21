@@ -12,9 +12,9 @@
     {
       "name": "figloops",
       "source": "./",
-      "description": "Wizard-driven stakeholder feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans.",
+      "description": "Wizard-driven user feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans.",
       "category": "design",
-      "tags": ["figma", "feedback", "playwright", "stakeholder-review", "wizard"]
+      "tags": ["figma", "feedback", "playwright", "user-review", "wizard"]
     }
   ]
 }

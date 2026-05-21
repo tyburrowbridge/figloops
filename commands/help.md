@@ -8,7 +8,7 @@ Read `feedback/state.json` in the current working directory if it exists.
 
 ````
 figloops
-Stakeholder feedback loops for localhost prototypes.
+User feedback loops for localhost prototypes.
 
   CURRENT
   Round <round> · phase: <phase>
@@ -17,7 +17,7 @@ Stakeholder feedback loops for localhost prototypes.
 COMMANDS
   :next      Advance the round to the next phase or gate
   :status    Show round tracker without advancing
-  :feedback  Show all stakeholder feedback to date (grouped by round)
+  :feedback  Show all user feedback to date (grouped by round)
   :themes    Show all clustered themes to date (grouped by round)
   :init      One-time project setup
   :help      This screen
@@ -26,7 +26,7 @@ COMMANDS
 Phase → next-action phrase:
 - `capture` → "Run /figloops:next to capture screenshots"
 - `push` → "Run /figloops:next to push captures to Figma"
-- `await-comments` → "Run /figloops:next when stakeholders respond"
+- `await-comments` → "Run /figloops:next when users respond"
 - `pull` → "Run /figloops:next to fetch comments"
 - `comment-review` → "Run /figloops:next to advance after reviewing comments"
 - `cluster` → "Run /figloops:next to cluster comments by theme"
@@ -44,7 +44,7 @@ Phase → next-action phrase:
 ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
 ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
 
-Stakeholder feedback loops for localhost prototypes.
+User feedback loops for localhost prototypes.
 
   NOT INITIALIZED
   No figloops.config.json in this project.
@@ -54,7 +54,7 @@ COMMANDS
   :init      One-time project setup wizard
   :next      Advance the round (after init)
   :status    Show round tracker
-  :feedback  Show all stakeholder feedback to date
+  :feedback  Show all user feedback to date
   :themes    Show all clustered themes to date
   :help      This screen
 

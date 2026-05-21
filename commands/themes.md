@@ -52,7 +52,7 @@ Print one blank line between rounds.
 
 | Theme | Cites | Summary |
 |---|---|---|
-| Navigation clarity | Sarah Lee (#12), Mike Chen (#17) | stakeholders struggled to orient inside the app. |
+| Navigation clarity | Sarah Lee (#12), Mike Chen (#17) | users struggled to orient inside the app. |
 | Color contrast | Anita Roy (#41) | secondary buttons read as disabled because contrast is too low. |
 
 ## Round 2 — in progress (phase: cluster)

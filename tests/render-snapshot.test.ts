@@ -43,7 +43,7 @@ const baseState: State = {
         {
           name: 'Navigation clarity',
           commentIds: ['12', '17'],
-          summary: 'Stakeholders struggled to orient inside the app.',
+          summary: 'Users struggled to orient inside the app.',
         },
       ],
       plan: [
@@ -89,7 +89,7 @@ describe('renderSnapshot', () => {
     const md = renderSnapshot(baseState, 2);
     expect(md).toContain('| Theme | Cites | Summary |');
     expect(md).toContain('|---|---|---|');
-    expect(md).toMatch(/\| Navigation clarity \| .*Sarah Lee \(#12\).*Mike Chen \(#17\).* \| Stakeholders struggled to orient inside the app\. \|/);
+    expect(md).toMatch(/\| Navigation clarity \| .*Sarah Lee \(#12\).*Mike Chen \(#17\).* \| Users struggled to orient inside the app\. \|/);
   });
 
   it('escapes pipes and newlines in theme cells', () => {

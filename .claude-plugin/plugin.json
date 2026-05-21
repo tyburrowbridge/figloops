@@ -1,5 +1,5 @@
 {
   "name": "figloops",
   "version": "1.0.0",
-  "description": "Wizard-driven stakeholder feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans."
+  "description": "Wizard-driven user feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans."
 }

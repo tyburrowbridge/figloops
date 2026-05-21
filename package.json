@@ -1,7 +1,7 @@
 {
   "name": "figloops",
   "version": "1.0.0",
-  "description": "Claude Code plugin: wizard-driven stakeholder feedback loops via Figma",
+  "description": "Claude Code plugin: wizard-driven user feedback loops via Figma",
   "type": "module",
   "private": true,
   "scripts": {

@@ -5,7 +5,7 @@
 
 ## Purpose
 
-`figloops` is a Claude Code plugin that turns localhost web prototypes into a stakeholder-review loop in Figma. The plugin captures screenshots of configured routes, pushes them to a Figma file as labeled frames, ingests the comments stakeholders leave, proposes a per-round change plan, tracks what gets shipped, and writes a per-round changelog entry back into Figma.
+`figloops` is a Claude Code plugin that turns localhost web prototypes into a user-review loop in Figma. The plugin captures screenshots of configured routes, pushes them to a Figma file as labeled frames, ingests the comments users leave, proposes a per-round change plan, tracks what gets shipped, and writes a per-round changelog entry back into Figma.
 
 The user experience is wizard-driven: one command (`/figloops:next`) advances the entire round through nine phases autonomously, gating only where genuine human judgment is needed.
 
@@ -26,7 +26,7 @@ The user experience is wizard-driven: one command (`/figloops:next`) advances th
 - Authenticated-route capture
 - Component- or state-level capture
 - Multiple Figma files per project
-- Stakeholder-weighted comment ranking
+- User-weighted comment ranking
 - Plugin-driven implementation of changes
 - REST-only fallback when the Figma MCP is unavailable
 - Official support for community Figma MCPs
@@ -94,7 +94,7 @@ Four commands total. Each has one clear purpose.
         {
           "name": "Navigation clarity",
           "commentIds": ["12", "17"],
-          "summary": "Stakeholders struggled to orient inside the app."
+          "summary": "Users struggled to orient inside the app."
         }
       ],
       "plan": [
@@ -177,7 +177,7 @@ The skill calls `TaskCreate` at round start for nine tasks, then `TaskUpdate` to
 
 1. Capture screenshots
 2. Push to Figma
-3. Wait for stakeholder comments
+3. Wait for user comments
 4. Pull comments
 5. Review comments
 6. Cluster themes
@@ -191,7 +191,7 @@ The skill calls `TaskCreate` at round start for nine tasks, then `TaskUpdate` to
 |---|---|---|---|
 | 1 | `capture` | Runs Playwright over configured routes. Prints captured list + planned 3-col Figma layout. | **Gate 1:** `approve` / `recapture` / `cancel` |
 | 2 | `push` | MCP preflight → REST image upload → MCP create page + frames + image fills → write `pushManifest` into `state.json`. Prints the Figma file URL. | none — advances on success |
-| 3 | `await-comments` | Calls the pull script. If 0 comments: prints "No comments yet — re-run `/figloops:next` when stakeholders respond." Stays in phase. | **Gate 2 (passive):** user re-runs `:next` when ready |
+| 3 | `await-comments` | Calls the pull script. If 0 comments: prints "No comments yet — re-run `/figloops:next` when users respond." Stays in phase. | **Gate 2 (passive):** user re-runs `:next` when ready |
 | 4 | `pull` | (Same script as phase 3, just succeeded.) Filters comments to this round's frame IDs, resolves author names, writes into `state.json`. Auto-advances to `comment-review`. | none |
 | 5 | `comment-review` | Renders pulled comments grouped by frame, each cited as `Author Name (#id)`. | **Gate 3:** `continue` to cluster, or `pull-again` to re-fetch (e.g., more comments arrived) |
 | 6 | `cluster` | Claude clusters comments by inferred semantic theme. Writes `themes` into `state.json`. Auto-advances to `plan-approval`. | none |
@@ -201,7 +201,7 @@ The skill calls `TaskCreate` at round start for nine tasks, then `TaskUpdate` to
 
 Note: Gate 2 is a *passive* gate — the user simply re-runs `:next` to retry the pull. Gates 1, 3, 4, 5 require an interactive reply.
 
-Phases 3 and 4 (`await-comments` and `pull`) are one logical step from the user's perspective: a single `:next` invocation transitions from `await-comments` through `pull` and parks at `comment-review` (gate 3). The two phases are modeled separately so the task tracker can show "Wait for stakeholder comments" as a distinct visible step even when it ticks through quickly.
+Phases 3 and 4 (`await-comments` and `pull`) are one logical step from the user's perspective: a single `:next` invocation transitions from `await-comments` through `pull` and parks at `comment-review` (gate 3). The two phases are modeled separately so the task tracker can show "Wait for user comments" as a distinct visible step even when it ticks through quickly.
 
 ### Gate 3 — comment-review reply syntax
 
@@ -258,11 +258,11 @@ Header surfaces current round and phase with a "next action" hint:
 
 ```
 figloops
-Stakeholder feedback loops for localhost prototypes.
+User feedback loops for localhost prototypes.
 
   CURRENT
   Round 2 · phase: awaiting comments
-  → Run /figloops:next when stakeholders respond
+  → Run /figloops:next when users respond
 
 COMMANDS
   :next     Advance the round to the next phase or gate
@@ -277,7 +277,7 @@ Header surfaces "not initialized" with init as the obvious next step:
 
 ```
 figloops
-Stakeholder feedback loops for localhost prototypes.
+User feedback loops for localhost prototypes.
 
   NOT INITIALIZED
   No figloops.config.json in this project.

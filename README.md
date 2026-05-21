@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  Wizard-driven stakeholder feedback loops for localhost prototypes — built as a Claude Code plugin.
+  Wizard-driven user feedback loops for localhost prototypes — built as a Claude Code plugin.
 </p>
 
-Capture your routes into Figma, ingest the comments stakeholders leave, get a per-round change plan, ship the changes, and write a per-round changelog back into Figma — all from one slash command.
+Capture your routes into Figma, ingest the comments users leave, get a per-round change plan, ship the changes, and write a per-round changelog back into Figma — all from one slash command.
 
 ---
 
@@ -61,7 +61,7 @@ You'll mostly only use `:next`.
 | `/figloops:init` | One-time project setup wizard. |
 | `/figloops:next` | Workhorse — runs the current phase, stops at the next gate. |
 | `/figloops:status` | Read-only view of the round tracker. |
-| `/figloops:feedback` | Show all stakeholder feedback to date, grouped by round and frame. |
+| `/figloops:feedback` | Show all user feedback to date, grouped by round and frame. |
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
 | `/figloops:help` | Lists commands and shows where you are. |
 
@@ -75,7 +75,7 @@ You'll mostly only use `:next`.
 |---|---|---|
 | 1 | Capture screenshots | Approve · Re-capture · Cancel |
 | 2 | Push to Figma | — |
-| 3 | Wait for stakeholder comments | re-run `:next` when ready |
+| 3 | Wait for user comments | re-run `:next` when ready |
 | 4 | Pull comments | — |
 | 5 | Review comments | Continue · Pull again · Cancel |
 | 6 | Cluster themes | — |

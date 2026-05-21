@@ -46,7 +46,7 @@ The init wizard refuses to complete until every external check passes.
    ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
    ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
 
-   Welcome to figloops — stakeholder feedback loops for localhost prototypes.
+   Welcome to figloops — user feedback loops for localhost prototypes.
    Setting up your project now…
    ```
    ````
@@ -343,7 +343,7 @@ The init wizard refuses to complete until every external check passes.
 11. **Create the round tracker via TaskCreate.** Call `TaskCreate` 9 times in a single message to seed the visible round phases (all `pending`):
     - `[figloops] Capture screenshots`
     - `[figloops] Push to Figma`
-    - `[figloops] Wait for stakeholder comments`
+    - `[figloops] Wait for user comments`
     - `[figloops] Pull comments`
     - `[figloops] Review comments`
     - `[figloops] Cluster themes`
@@ -455,12 +455,12 @@ The init wizard refuses to complete until every external check passes.
    Where `<manifest JSON>` is `{ "pageId": "<id>", "frames": [{ "label": "...", "frameId": "...", "imageHash": "..." }, ...] }`.
 
 8. Regenerate snapshot.
-9. Print the Figma file URL and tell the user to share it with stakeholders.
+9. Print the Figma file URL and tell them to share it with the users they want feedback from.
 10. Mark task complete. Advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts await-comments`. Continue at `await-comments` handler.
 
 ### Phase handler: `await-comments`
 
-1. Mark `[figloops] Wait for stakeholder comments` as `in_progress`.
+1. Mark `[figloops] Wait for user comments` as `in_progress`.
 2. Run pull script (it's safe to call when there are no comments yet):
 
    ```bash
@@ -470,7 +470,7 @@ The init wizard refuses to complete until every external check passes.
    Parse stdout: `{ round, totalComments, forThisRound }`.
 3. **If `forThisRound === 0`:** stay in `await-comments`. Print:
 
-   > No comments yet for Round <round>. Re-run `/figloops:next` once stakeholders have responded.
+   > No comments yet for Round <round>. Re-run `/figloops:next` once users have responded.
 
    Do not advance. Do not change task tracker state.
 4. **If `forThisRound > 0`:** mark task complete. Advance: `tsx <PLUGIN_DIR>/scripts/advance-phase.ts pull`. Continue at `pull` handler.
