@@ -15,7 +15,7 @@ The user runs slash commands in a consuming repo, not in the plugin's repo. The 
 2. If unset and the phase is `init`, ask the user for it and write it into the new `.env` along with `FIGMA_TOKEN`.
 3. If unset for any other phase, abort with: `"FIGLOOPS_PLUGIN_DIR is not set. Add it to .env or your shell. See README."`
 
-For the rest of this skill, when you see `<PLUGIN_DIR>` in commands, substitute the actual absolute path. Run TS scripts as: `cd <CONSUMING_REPO> && <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/<name>.ts <args>`.
+For the rest of this skill, when you see `<PLUGIN_DIR>` or `<CONSUMING_REPO>` in commands, substitute the actual absolute path **wrapped in double quotes** — both paths may contain spaces. Run TS scripts as: `cd "<CONSUMING_REPO>" && ""<PLUGIN_DIR>/node_modules/.bin/tsx"" "<PLUGIN_DIR>/scripts/<name>.ts" <args>`. Never use backslash-escaped spaces in paths — always quote instead.
 
 ## MCP preflight (used by init + every non-status invocation of next)
 
@@ -108,7 +108,7 @@ The init wizard refuses to complete until every external check passes.
    **5c. Validate the token** (whichever source provided it):
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getMe({ token: process.env.FIGMA_TOKEN }).then(me => console.log(JSON.stringify(me)))).catch(e => { console.error(e.message); process.exit(1); })"
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getMe({ token: process.env.FIGMA_TOKEN }).then(me => console.log(JSON.stringify(me)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
    Set `FIGMA_TOKEN=<token>` in the env for this invocation; do not write to `.env` yet. On failure (401 / network), abort init with the error message + `https://www.figma.com/developers/api#access-tokens`. On success, mark `[figloops setup] Authenticate with Figma` as `completed`.
@@ -121,7 +121,7 @@ The init wizard refuses to complete until every external check passes.
    Extract the file key (segment after `/file/`, `/design/`, or `/proto/`). Validate access:
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getFile({ fileKey: '<KEY>', token: process.env.FIGMA_TOKEN }).then(f => console.log(JSON.stringify(f)))).catch(e => { console.error(e.message); process.exit(1); })"
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/figma-client.js').then(m => m.getFile({ fileKey: '<KEY>', token: process.env.FIGMA_TOKEN }).then(f => console.log(JSON.stringify(f)))).catch(e => { console.error(e.message); process.exit(1); })"
    ```
 
    On 403/404, surface the error and re-prompt for a corrected URL. On success, mark `[figloops setup] Connect Figma file` as `completed`.
@@ -182,9 +182,23 @@ The init wizard refuses to complete until every external check passes.
    | `next` (app router) | `app/` dir | `app/**/page.{tsx,ts,jsx,js}` |
    | `nuxt` | `pages/` dir | `pages/**/*.vue` |
    | `@sveltejs/kit` | `src/routes/` dir | `src/routes/**/+page.svelte` |
-   | `react-router*` or `@tanstack/react-router` | grep | search `src/` for `path:` or `<Route path=` patterns |
-   | `vue-router` | grep | search `src/` for `path:` patterns in router files |
+   | `react-router*` or `@tanstack/react-router` | grep | see command below |
+   | `vue-router` | grep | see command below |
    | none matched | fallback | see below |
+
+   For file-based frameworks (`next`, `nuxt`, `@sveltejs/kit`), use `find`. For router-config frameworks, use these exact grep commands (use `-E` for extended regex; never use `\s` — use `[[:space:]]` instead):
+
+   React Router:
+   ```bash
+   grep -rEl "(createBrowserRouter|createHashRouter|RouterProvider|BrowserRouter|<Route)" src/ --include="*.tsx" --include="*.ts" --include="*.jsx" --include="*.js" 2>/dev/null | head -20
+   ```
+
+   Vue Router:
+   ```bash
+   grep -rEl "(createRouter|RouterView|routes[[:space:]]*:)" src/ --include="*.ts" --include="*.js" --include="*.vue" 2>/dev/null | head -10
+   ```
+
+   Read the matched files and extract `path:` values or `<Route path=` values from the content.
 
    Run the appropriate `find` or `grep` command. Filter out:
    - Dynamic catch-all segments (`[...slug]`, `[[...]]`)
@@ -233,7 +247,7 @@ The init wizard refuses to complete until every external check passes.
    - **"Yes — probe it"**: build the stdin payload `{ "baseUrl": "<URL>", "routes": [{"label": "...", "path": "..."}, ...] }` from the discovered list, then run:
 
      ```bash
-     echo '<PAYLOAD_JSON>' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/probe-routes.ts
+     echo '<PAYLOAD_JSON>' | "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/probe-routes.ts
      ```
 
      Parse stdout: `{ serverReachable, entryLinks, routes: [{label, path, status, reachable, linkedFromEntry, finalUrl?, error?}] }`.
@@ -335,7 +349,7 @@ The init wizard refuses to complete until every external check passes.
 10. **Initialize state.** Mark `[figloops setup] Initialize figloops` as `in_progress`. Run:
 
     ```bash
-    <PLUGIN_DIR>/node_modules/.bin/tsx -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
+    "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
     ```
 
     Mark `[figloops setup] Initialize figloops` as `completed`.
@@ -376,14 +390,14 @@ The init wizard refuses to complete until every external check passes.
 2. Run:
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/capture.ts
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/capture.ts
    ```
 
    Capture stdout JSON: `{ round, captures: [{label, path, filename}], failed: [] }`.
 3. Regenerate snapshot:
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/render-snapshot.ts
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/render-snapshot.ts
    ```
 
 4. Present the **preview gate** (Gate 1). First print the summary:
@@ -421,7 +435,7 @@ The init wizard refuses to complete until every external check passes.
 2. Run:
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/upload-images.ts
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/upload-images.ts
    ```
 
    Parse stdout: `{ round, uploads: [{label, filename, imageHash}], failed: [] }`. If `uploads` is empty, abort and surface the error.
@@ -449,7 +463,7 @@ The init wizard refuses to complete until every external check passes.
 7. Persist the manifest into state:
 
    ```bash
-   echo '<manifest JSON>' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/set-manifest.ts
+   echo '<manifest JSON>' | "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/set-manifest.ts
    ```
 
    Where `<manifest JSON>` is `{ "pageId": "<id>", "frames": [{ "label": "...", "frameId": "...", "imageHash": "..." }, ...] }`.
@@ -464,7 +478,7 @@ The init wizard refuses to complete until every external check passes.
 2. Run pull script (it's safe to call when there are no comments yet):
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/pull-comments.ts
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/pull-comments.ts
    ```
 
    Parse stdout: `{ round, totalComments, forThisRound }`.
@@ -534,8 +548,8 @@ The init wizard refuses to complete until every external check passes.
 4. Update state.json with the new themes and plan. Both are written via dedicated CLIs that take stdin:
 
    ```bash
-   echo '<THEMES_JSON>' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/set-themes.ts
-   echo '{"action":"set","items":[ ... ]}' | <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/update-plan.ts
+   echo '<THEMES_JSON>' | "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/set-themes.ts
+   echo '{"action":"set","items":[ ... ]}' | "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/update-plan.ts
    ```
 
    Where `<THEMES_JSON>` is a JSON array of `{name, commentIds, summary}` objects, and the update-plan payload's `items` is a JSON array of `{id, themeName, change, drivesFrom, status: 'proposed'}` objects.
@@ -693,7 +707,7 @@ The init wizard refuses to complete until every external check passes.
 3. Run:
 
    ```bash
-   <PLUGIN_DIR>/node_modules/.bin/tsx <PLUGIN_DIR>/scripts/format-changelog.ts <round> <round + 1> <date>
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" <PLUGIN_DIR>/scripts/format-changelog.ts <round> <round + 1> <date>
    ```
 
    Capture the markdown string from stdout.
