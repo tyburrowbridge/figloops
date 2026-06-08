@@ -12,7 +12,7 @@
 ## Features
 
 | | |
-|---|---|
+
 | **Automated Figma snapshots** | Captures every route (local or deployed) and arranges them into labeled Figma frames ready for review. |
 | **AI comment synthesis** | Pulls feedback from Figma, clusters it into UX themes, filters noise. |
 | **Prioritized change plan** | Converts themes into a concrete, ranked list of UI changes for Claude Code to implement. |
@@ -24,7 +24,7 @@
 ## Requirements
 
 | | |
-|---|---|
+
 | Claude Code | Any version |
 | Node.js | 20+ |
 | Figma account | Edit access to a file *(recommended: a dedicated file — figloops creates pages on every round)* |
