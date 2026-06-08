@@ -36,6 +36,10 @@ In Claude Code, run these **one at a time**:
 /plugin install figloops@figloops
 ```
 
+```
+/reload-plugins reload claude code plugins
+```
+
 To pin to a specific release instead of tracking the default branch: `tyburrowbridge/figloops@v1.0.0`.
 
 ---
