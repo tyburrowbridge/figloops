@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Claude Code plugin: wizard-driven user feedback loops via Figma",
   "type": "module",
-  "private": true,
-  "scripts": {
+"scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
