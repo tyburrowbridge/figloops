@@ -37,7 +37,7 @@ In Claude Code, run these **one at a time**:
 ```
 
 ```
-/reload-plugins reload claude code plugins
+/reload-plugins
 ```
 
 To pin to a specific release instead of tracking the default branch: `tyburrowbridge/figloops@v1.0.0`.
