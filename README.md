@@ -3,10 +3,9 @@
 </p>
 
 <p align="center">
-  Wizard-driven user feedback loops for web prototypes — built as a Claude Code plugin.
+  A Claude Code plugin that bridges the gap between live code and design-led user feedback. Automatically snapshot your project's URLs into organized Figma frames, ingest user comments, analyze UX themes, and generate actionable UI updates and release notes—all structured by iteration rounds.
 </p>
 
-Capture your routes into Figma, ingest the comments users leave, get a per-round change plan, ship the changes, and write a per-round changelog back into Figma — all from one slash command.
 
 ---
 
