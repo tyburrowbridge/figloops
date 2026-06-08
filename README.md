@@ -12,15 +12,15 @@ Capture your routes into Figma, ingest the comments users leave, get a per-round
 
 ## Requirements
 
-Before installing, make sure you have:
+| | |
+|---|---|
+| Claude Code | Any version |
+| Node.js | 20+ |
+| Figma account | Edit access to a file *(recommended: a dedicated file — figloops creates pages on every round)* |
+| Figma Personal Access Token | [Generate one](https://www.figma.com/developers/api#access-tokens) |
+| Figma MCP server | [Setup guide](https://github.com/figma/mcp-server-guide) *(remote mode)* |
 
-1. **Claude Code** installed.
-2. **Node.js 20+**.
-3. **A Figma account** with edit access to a file you can push into. *(Recommended: a fresh file dedicated to this project.)*
-4. **A Figma Personal Access Token** — generate at https://www.figma.com/developers/api#access-tokens.
-5. **The official Figma MCP server connected to your Claude Code session** — setup: https://github.com/figma/mcp-server-guide *(remote mode)*.
-
-If any of these are missing, `/figloops:init` will refuse to complete and tell you what to fix.
+`/figloops:init` validates all of these and tells you what's missing.
 
 ---
 
