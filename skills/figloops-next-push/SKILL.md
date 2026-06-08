@@ -31,9 +31,12 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
    const captures = /* [{label, filename}] from state.json */;
    const pageName = '<Round N — timestamp>';
    const viewportWidth = <width>;
-   const uiTheme = '<light|dark>';
+   // Replace 'light' with the actual uiTheme value read from state.json (never embed the placeholder literally)
+   const uiTheme = 'light'; // ← substitute 'light' or 'dark' from state.json
 
    const isDark = uiTheme === 'dark';
+   // light app  → dark canvas (#1E1E1E) so white frames stand out
+   // dark app   → light canvas (#F0F0F0) so dark frames stand out
    const pageBg   = isDark ? { r: 240/255, g: 240/255, b: 240/255 } : { r: 30/255, g: 30/255, b: 30/255 };
    const labelClr = isDark ? { r: 51/255,  g: 51/255,  b: 51/255  } : { r: 1, g: 1, b: 1 };
 
@@ -51,7 +54,7 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      else { page = figma.createPage(); page.name = pageName; }
    }
    await figma.setCurrentPageAsync(page);
-   page.backgrounds = [{ type: 'SOLID', color: pageBg, opacity: 1 }];
+   page.backgrounds = [{ type: 'SOLID', color: pageBg, opacity: 1, visible: true, blendMode: 'NORMAL' }];
 
    await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
 
@@ -64,7 +67,7 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      labelNode.fontName = { family: 'Inter', style: 'Semi Bold' };
      labelNode.fontSize = 24;
      labelNode.characters = pathToTitle(capture.filename);
-     labelNode.fills = [{ type: 'SOLID', color: labelClr }];
+     labelNode.fills = [{ type: 'SOLID', color: labelClr, opacity: 1, visible: true, blendMode: 'NORMAL' }];
      labelNode.x = 0;
      labelNode.y = currentY;
      page.appendChild(labelNode);
