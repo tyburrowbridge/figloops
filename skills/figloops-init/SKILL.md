@@ -1,6 +1,6 @@
 ---
 name: figloops-init
-description: figloops one-time project setup wizard — verifies MCP, PAT, Figma file, collects config, and initializes state
+description: Setup wizard — verifies MCP, PAT, Figma file; collects config
 ---
 
 ## Setup

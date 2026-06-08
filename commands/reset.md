@@ -1,5 +1,5 @@
 ---
-description: Restart the current round or discard all rounds and start fresh
+description: Restart or discard the current round
 ---
 
 1. Read `feedback/state.json`:

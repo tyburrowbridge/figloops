@@ -1,6 +1,6 @@
 ---
 name: figloops-next-push
-description: figloops push-to-Figma phase handler — uploads images and creates Figma frames
+description: Push phase — upload images and create Figma frames
 ---
 
 ## Setup

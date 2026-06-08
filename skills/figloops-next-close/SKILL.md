@@ -1,6 +1,6 @@
 ---
 name: figloops-next-close
-description: figloops close-round phase handler — writes the changelog, bumps the round, and re-seeds tasks
+description: Close phase — write changelog and start next round
 ---
 
 ## Setup

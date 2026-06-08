@@ -1,5 +1,5 @@
 ---
-description: List figloops commands and show "you are here" if a round is in progress
+description: List commands; show current phase if a round is active
 ---
 
 Read `feedback/state.json` in the current working directory if it exists.

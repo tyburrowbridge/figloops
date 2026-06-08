@@ -1,5 +1,5 @@
 ---
-description: Advance the round to the next phase or user gate
+description: Run the current phase; stop at the next gate
 ---
 
 1. Read `feedback/state.json`:

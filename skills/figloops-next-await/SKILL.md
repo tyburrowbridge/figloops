@@ -1,6 +1,6 @@
 ---
 name: figloops-next-await
-description: figloops await-comments phase handler — polls for Figma comments and gates until at least one arrives
+description: Await phase — gate until Figma comments arrive
 ---
 
 ## Setup

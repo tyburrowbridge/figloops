@@ -1,5 +1,5 @@
 ---
-description: One-time project setup wizard (verifies MCP, Figma PAT, file access)
+description: One-time setup wizard
 ---
 
 Invoke skill `figloops-init`.

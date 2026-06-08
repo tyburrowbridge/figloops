@@ -1,6 +1,6 @@
 ---
 name: figloops-next-implement
-description: figloops implement phase handler — tracks shipping of approved plan items with optional git branch
+description: Implement phase — track shipping of approved items
 ---
 
 ## Setup

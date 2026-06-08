@@ -1,6 +1,6 @@
 ---
 name: figloops-next-review
-description: figloops comment-review phase handler — displays comments grouped by frame and gates on user decision
+description: Review phase — display comments by frame; gate on user decision
 ---
 
 ## Setup

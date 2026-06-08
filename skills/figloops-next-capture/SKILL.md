@@ -1,6 +1,6 @@
 ---
 name: figloops-next-capture
-description: figloops capture phase handler — runs Playwright captures and presents the preview gate
+description: Capture phase — Playwright screenshots + preview gate
 ---
 
 ## Setup

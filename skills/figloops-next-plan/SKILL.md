@@ -1,6 +1,6 @@
 ---
 name: figloops-next-plan
-description: figloops plan-approval phase handler — presents the proposed plan and gates on user approval
+description: Plan phase — present proposed changes; gate on approval
 ---
 
 ## Setup

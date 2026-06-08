@@ -1,6 +1,6 @@
 ---
 name: figloops-reset
-description: figloops reset handler — restart the current round or discard all rounds and start fresh
+description: Restart or discard the current round
 ---
 
 ## Setup

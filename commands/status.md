@@ -1,5 +1,5 @@
 ---
-description: Show the current round tracker and Figma connection health without advancing
+description: Round tracker + Figma connection health
 ---
 
 ## Connection health check

@@ -1,6 +1,6 @@
 ---
 name: figloops-next-cluster
-description: figloops cluster-themes phase handler — groups comments into semantic themes and drafts a plan
+description: Cluster phase — group comments into themes and draft plan
 ---
 
 ## Setup

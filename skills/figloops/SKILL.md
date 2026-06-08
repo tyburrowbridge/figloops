@@ -1,6 +1,6 @@
 ---
 name: figloops
-description: Wizard-driven figloops workflow — dispatch hub. Prefer invoking phase-specific skills directly via the command files.
+description: Phase dispatch hub
 ---
 
 This skill is a fallback dispatch hub. Command files invoke phase-specific skills directly. If this skill is invoked with a phase argument, route to the matching skill:

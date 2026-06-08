@@ -1,5 +1,5 @@
 ---
-description: Show all user feedback to date, grouped by round and frame
+description: Show user feedback by round and frame
 ---
 
 Read `feedback/state.json` in the current working directory.

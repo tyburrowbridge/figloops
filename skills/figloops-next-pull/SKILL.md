@@ -1,6 +1,6 @@
 ---
 name: figloops-next-pull
-description: figloops pull-comments phase handler — snapshots and advances to comment-review
+description: Pull phase — fetch Figma comments and advance
 ---
 
 ## Setup

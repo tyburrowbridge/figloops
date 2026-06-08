@@ -1,5 +1,5 @@
 ---
-description: Show all themes Claude has clustered to date, grouped by round
+description: Show clustered themes by round
 ---
 
 Read `feedback/state.json` in the current working directory.
