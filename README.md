@@ -11,7 +11,7 @@
 
 ## Features
 
-
+| | |
 |---|---|
 | **Automated Figma snapshots** | Captures every route (local or deployed) and arranges them into labeled Figma frames ready for review. |
 | **AI comment synthesis** | Pulls feedback from Figma, clusters it into UX themes, filters noise. |
@@ -23,7 +23,7 @@
 
 ## Requirements
 
-
+| | |
 |---|---|
 | Claude Code | Any version |
 | Node.js | 20+ |
