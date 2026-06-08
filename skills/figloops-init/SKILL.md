@@ -212,19 +212,9 @@ options:
 ```
 "Other" → parse `width x height` or `width × height` from the user's input.
 
-**7c. UI theme:**
-```
-question: "What color theme does your app use?"
-header: "UI theme"
-options:
-  - label: "Light  (white/light backgrounds)  (Recommended)"
-  - label: "Dark  (dark backgrounds)"
-```
-Store as `light` or `dark`. Used to pick a contrasting Figma page background so frames stand out.
+**7c. Changelog page name:** always `"Changelog"`. Do not ask.
 
-**7d. Changelog page name:** always `"Changelog"`. Do not ask.
-
-**7e. Route discovery.**
+**7d. Route discovery.**
 
 Detect framework from `package.json` (`dependencies` + `devDependencies`):
 
@@ -307,7 +297,7 @@ options:
 
 Require ≥1 route before continuing.
 
-**7f. Scenarios (optional).**
+**7e. Scenarios (optional).**
 
 Check `package.json` for known UI libraries:
 
@@ -349,7 +339,7 @@ options:
   - label: "Skip — add none"
 ```
 
-**7g. Git workflow** (only if cwd is a git repo).
+**7f. Git workflow** (only if cwd is a git repo).
 
 Check: `git rev-parse --is-inside-work-tree 2>/dev/null`. If exits non-zero or does not print `true`: skip entirely; omit the `git` block from config.
 
@@ -373,7 +363,6 @@ Mark `[FIGLOOPS] Configure project settings` as `completed`.
   "$schema": "<absolute PLUGIN_DIR path>/config.schema.json",
   "devServer": { "url": "<URL>", "waitFor": "networkidle" },
   "viewport": { "width": <W>, "height": <H> },
-  "uiTheme": "<light|dark>",
   "figma": { "fileKey": "<KEY>", "changelogPageName": "<NAME>" },
   "routes": [ { "label": "<LABEL>", "path": "<PATH>" } ],
   "scenarios": [ { "label": "<LABEL>", "path": "<PATH>", "setup": ["<SELECTOR>"] } ],

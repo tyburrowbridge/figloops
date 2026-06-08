@@ -15,7 +15,7 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
 1. Mark `[FIGLOOPS] Push to Figma` as `in_progress`.
 
-2. Read `figloops.config.json` for `figma.fileKey`, `viewport.width`, and `uiTheme` (default `'light'` if absent). Read `feedback/state.json` for `currentRound` and the current round's `captures` array (`[{ label, filename }]`).
+2. Read `figloops.config.json` for `figma.fileKey` and `viewport.width`. Read `feedback/state.json` for `currentRound`, `uiTheme` (default `'light'` if absent), and the current round's `captures` array (`[{ label, filename }]`).
 
    Resolve captures directory: `feedback/round-<currentRound>/captures/`. If it doesn't exist or contains no `.png` files, abort: `✗ No captures found — run /figloops:next from the capture phase first.`
 
