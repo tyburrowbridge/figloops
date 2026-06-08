@@ -108,13 +108,13 @@ If neither file exists, skip this step entirely.
 ### Step 3 — Setup checklist
 
 Create 5 tasks in a single message (all `pending`):
-- `Verify Figma MCP`
-- `Authenticate with Figma`
-- `Connect Figma file`
-- `Configure project settings`
-- `Initialize figloops`
+- `[FIGLOOPS] Verify Figma MCP`
+- `[FIGLOOPS] Authenticate with Figma`
+- `[FIGLOOPS] Connect Figma file`
+- `[FIGLOOPS] Configure project settings`
+- `[FIGLOOPS] Initialize figloops`
 
-Immediately mark `Verify Figma MCP` and `Authenticate with Figma` as `completed` (steps 1 already passed both checks).
+Immediately mark `[FIGLOOPS] Verify Figma MCP` and `[FIGLOOPS] Authenticate with Figma` as `completed` (steps 1 already passed both checks).
 
 ### Step 4 — Figma file URL
 
@@ -135,7 +135,7 @@ options:
 
 ### Step 5 — Figma PAT
 
-Mark `Authenticate with Figma` as `in_progress` (if not already `completed` from step 2b).
+Mark `[FIGLOOPS] Authenticate with Figma` as `in_progress` (if not already `completed` from step 2b).
 
 Check `process.env.FIGMA_TOKEN` then `.env` file. If found, validate:
 ```bash
@@ -168,15 +168,15 @@ On failure (401/network): abort with the error + `https://www.figma.com/develope
 
 ### Step 6 — Figma file validation
 
-Mark `Connect Figma file` as `in_progress`. Use the file key from step 4:
+Mark `[FIGLOOPS] Connect Figma file` as `in_progress`. Use the file key from step 4:
 ```bash
 "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/validate-file.ts" "<KEY>"
 ```
-On 403/404: surface the error and re-prompt for a corrected URL (same blockquote format as step 4). On success: mark `Connect Figma file` as `completed`.
+On 403/404: surface the error and re-prompt for a corrected URL (same blockquote format as step 4). On success: mark `[FIGLOOPS] Connect Figma file` as `completed`.
 
 ### Step 7 — Project config
 
-Mark `Configure project settings` as `in_progress`.
+Mark `[FIGLOOPS] Configure project settings` as `in_progress`.
 
 **7a. Dev server URL:**
 ```
@@ -342,7 +342,7 @@ options:
 ```
 Store as `always`, `ask`, or `never`.
 
-Mark `Configure project settings` as `completed`.
+Mark `[FIGLOOPS] Configure project settings` as `completed`.
 
 ### Step 8 — Write `figloops.config.json`
 
@@ -370,11 +370,11 @@ FIGLOOPS_PLUGIN_DIR=<PLUGIN_DIR>
 
 ### Step 10 — Initialize state
 
-Mark `Initialize figloops` as `in_progress`. Run:
+Mark `[FIGLOOPS] Initialize figloops` as `in_progress`. Run:
 ```bash
 "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/state.js').then(m => { m.initState('feedback/state.json'); console.log('initialized'); })"
 ```
-Mark `Initialize figloops` as `completed`.
+Mark `[FIGLOOPS] Initialize figloops` as `completed`.
 
 ### Step 11 — Create round tracker
 

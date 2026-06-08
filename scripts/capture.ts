@@ -1,8 +1,8 @@
-import { chromium, type Browser } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../src/config.js';
-import { loadState, writeState, currentRoundData, type Capture as StateCapture } from '../src/state.js';
+import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
 
 export interface CaptureRoute {
   label: string;
@@ -29,10 +29,31 @@ export interface CaptureArgs {
 export interface CaptureResult {
   captures: Array<{ label: string; path: string; filename: string }>;
   failed: Array<{ label: string; error: string }>;
+  uiTheme: UiTheme;
 }
 
 function slug(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function sampleLuminance(page: Page): Promise<number | null> {
+  // Passed as a string so TypeScript doesn't type-check browser globals.
+  const rgb = await page.evaluate<[number, number, number] | null>(`(() => {
+    const el = document.elementFromPoint(
+      Math.floor(window.innerWidth / 2),
+      Math.floor(window.innerHeight / 2)
+    );
+    const style = window.getComputedStyle(el || document.body);
+    const bg = style.backgroundColor;
+    const m = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+    return m ? [+m[1], +m[2], +m[3]] : null;
+  })()`);
+  if (!rgb) return null;
+  const [r, g, b] = (rgb as [number, number, number]).map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 export async function capture(args: CaptureArgs): Promise<CaptureResult> {
@@ -43,6 +64,7 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
     const page = await ctx.newPage();
     const captures: CaptureResult['captures'] = [];
     const failed: CaptureResult['failed'] = [];
+    const luminanceSamples: number[] = [];
 
     // Routes first, then scenarios — both produce numbered captures in one list.
     const items: Array<CaptureRoute & { setup?: string[] }> = [
@@ -65,6 +87,8 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
         if (r.waitFor) {
           await page.waitForSelector(r.waitFor, { timeout: 10_000 });
         }
+        const lum = await sampleLuminance(page);
+        if (lum !== null) luminanceSamples.push(lum);
         await page.screenshot({ path: out, fullPage: true });
         captures.push({ label: r.label, path: out, filename });
       } catch (err) {
@@ -73,7 +97,14 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
         process.stderr.write(`[capture] skipped ${r.label}: ${message}\n`);
       }
     }
-    return { captures, failed };
+
+    const avgLuminance =
+      luminanceSamples.length > 0
+        ? luminanceSamples.reduce((a, b) => a + b, 0) / luminanceSamples.length
+        : 0.5;
+    const uiTheme: UiTheme = avgLuminance > 0.4 ? 'light' : 'dark';
+
+    return { captures, failed, uiTheme };
   } finally {
     await browser.close();
   }
@@ -113,6 +144,7 @@ async function main() {
     path: labelToPath.get(c.label)!,
     filename: c.filename,
   }));
+  state.uiTheme = result.uiTheme;
   writeState(statePath, state);
 
   process.stdout.write(JSON.stringify({ round: state.currentRound, ...result }, null, 2));

@@ -25,15 +25,40 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error + partial 
 
 4. Read `figloops.config.json` for `figma.fileKey` and `figma.changelogPageName`.
 
-5. Call MCP to find or create page `<changelogPageName>` in `<fileKey>`. Capture `pageId`.
+5. Call MCP **once** to find or create the changelog page, compute the next y-position from existing frames, and create the text frame — all in a single JS execution. Embed `changelogPageName`, `frameName` (`Round <round> → Round <round+1>`), and `markdownContent` as literals.
 
-6. Call MCP to enumerate existing frames on that page. Compute next y-position (stack vertically; start at y=0 if page is empty).
+   ```js
+   const changelogPageName = '<name>';
+   const frameName = 'Round <N> → Round <N+1>';
+   const markdownContent = `<escaped changelog markdown>`;
 
-7. Call MCP to create a text frame:
-   - name: `Round <round> → Round <round+1>`
-   - position: x=0, y=`<computed>`
-   - width: 800
-   - content: the formatted markdown from step 3
+   let page = figma.root.children.find(p => p.name === changelogPageName);
+   if (!page) { page = figma.createPage(); page.name = changelogPageName; }
+   await figma.setCurrentPageAsync(page);
+
+   const existingFrames = page.children.filter(n => 'y' in n && 'height' in n);
+   const nextY = existingFrames.length > 0
+     ? Math.max(...existingFrames.map(f => f.y + f.height)) + 40
+     : 0;
+
+   await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+   const textNode = figma.createText();
+   textNode.characters = markdownContent;
+   textNode.fontSize = 14;
+
+   const frame = figma.createFrame();
+   frame.name = frameName;
+   frame.x = 0;
+   frame.y = nextY;
+   frame.resize(800, 100);
+   frame.appendChild(textNode);
+   frame.resize(800, textNode.height + 40);
+   page.appendChild(frame);
+
+   return JSON.stringify({ pageId: page.id, frameId: frame.id });
+   ```
+
+   Capture `pageId` and `frameId` from the return value.
 
 8. Regenerate snapshot:
    ```bash

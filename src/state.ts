@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
+const uiThemeSchema = z.enum(['light', 'dark']);
+export type UiTheme = z.infer<typeof uiThemeSchema>;
+
 export const phaseSchema = z.enum([
   'capture',
   'push',
@@ -89,6 +92,7 @@ export const stateSchema = z.object({
   schemaVersion: z.literal(1),
   currentRound: z.number().int().positive(),
   currentPhase: phaseSchema,
+  uiTheme: uiThemeSchema.optional(),
   rounds: z.record(z.string().regex(/^\d+$/), roundDataSchema),
 });
 
