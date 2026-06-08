@@ -32,6 +32,13 @@ Print this first, before any tool calls:
 Welcome to figloops — user feedback loops for web prototypes.
 Setting up your project now…
 ```
+
+Before we begin, you'll need:
+
+- **Figma MCP** connected to this Claude Code session — https://github.com/figma/mcp-server-guide
+- **Figma Personal Access Token** — https://www.figma.com/developers/api#access-tokens
+- **A Figma file URL** to push screenshots into *(recommended: a dedicated file — figloops creates new pages on every round)*
+- **Your app URL** — local (`http://localhost:3000`) or deployed (Vercel, Netlify, GitHub Pages, etc.)
 ````
 
 ### Step 1 — MCP preflight
