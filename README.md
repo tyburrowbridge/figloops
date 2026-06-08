@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Wizard-driven user feedback loops for localhost prototypes — built as a Claude Code plugin.
+  Wizard-driven user feedback loops for web prototypes — built as a Claude Code plugin.
 </p>
 
 Capture your routes into Figma, ingest the comments users leave, get a per-round change plan, ship the changes, and write a per-round changelog back into Figma — all from one slash command.
@@ -97,7 +97,6 @@ You'll mostly only use `:next`.
 
 ## Known limits (v1.0.0)
 
-- Local dev server only (no deployed URLs yet)
 - Full-screen captures only (no component-level)
 - One Figma file per project
 - Requires Figma MCP — no REST-only fallback

@@ -29,7 +29,7 @@ Print this first, before any tool calls:
 ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
 ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
 
-Welcome to figloops — user feedback loops for localhost prototypes.
+Welcome to figloops — user feedback loops for web prototypes.
 Setting up your project now…
 ```
 ````
@@ -180,13 +180,16 @@ Mark `[FIGLOOPS] Configure project settings` as `in_progress`.
 
 **7a. Dev server URL:**
 ```
-question: "What URL is your dev server running on?"
-header: "Dev server"
+question: "Where is your app running?"
+header: "App URL"
 options:
   - label: "http://localhost:3000"
   - label: "http://localhost:5173"
+  - label: "Vercel / Netlify / GitHub Pages — I have a URL"
+  - label: "Other"
 ```
-"Other" option → blockquote: `> ⚙️ **Enter your dev server URL** (e.g. \`http://localhost:5173/username/project\`)`
+- "Vercel / Netlify / GitHub Pages" or "Other" → blockquote: `> 🔗 **Enter your app URL** (e.g. \`https://my-app.vercel.app\` or \`http://localhost:4000\`)`
+- Accept any valid URL — local or remote.
 
 **7b. Viewport:**
 ```
