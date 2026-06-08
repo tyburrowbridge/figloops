@@ -99,7 +99,7 @@ You'll mostly only use `:next`.
 
 ---
 
-## Files figloops puts in your repo
+## Project files
 
 - `figloops.config.json` — routes, viewport, Figma file key
 - `.env` — `FIGMA_TOKEN` + `FIGLOOPS_PLUGIN_DIR`
