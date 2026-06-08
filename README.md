@@ -24,7 +24,7 @@
 ## Requirements
 
 - [ ] **Claude Code** (any version)
-- [ ] **Node.js 20+**
+- [ ] **Node.js 20+** — [nodejs.org](https://nodejs.org)
 - [ ] **Figma account** with edit access — *(recommended: a dedicated file, figloops creates pages on every round)*
 - [ ] **Figma Personal Access Token** — [generate one](https://www.figma.com/developers/api#access-tokens)
 - [ ] **Figma MCP server** connected — [setup guide](https://github.com/figma/mcp-server-guide) *(remote mode)*
