@@ -10,6 +10,18 @@ Capture your routes into Figma, ingest the comments users leave, get a per-round
 
 ---
 
+## Features
+
+| | |
+|---|---|
+| **Automated Figma snapshots** | Captures every route (local or deployed) and arranges them into labeled Figma frames ready for review. |
+| **AI comment synthesis** | Pulls feedback from Figma, clusters it into UX themes, filters noise. |
+| **Prioritized change plan** | Converts themes into a concrete, ranked list of UI changes for Claude Code to implement. |
+| **Structured rounds** | Feedback, plan, and changelog are scoped per round — easy to trace what changed and why. |
+| **Auto-generated changelog** | Writes a user-facing changelog page back into your Figma file after each round closes. |
+
+---
+
 ## Requirements
 
 | | |
