@@ -45,12 +45,13 @@ Before we begin, you'll need:
 
 Print `→ Checking for Figma MCP write tool…`. Confirm `use_figma` (or `figma_execute` from southleft/figma-console-mcp) is available. On fail: print `✗ No Figma MCP write tool found`, tell user to install the official Figma MCP server at https://github.com/figma/mcp-server-guide, abort.
 
-Auth probe (only if `FIGMA_TOKEN` is already set in env or `.env`):
-- Print `→ Verifying Figma auth…`
-- Run: `"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/validate-token.ts"`
-- On success: print `✓ Auth confirmed — **<handle>**`
-- On fail with a token present (bad token / 401): print `✗ Figma auth failed — <error>` and abort.
-- If `FIGMA_TOKEN` is not set: print `→ No token in env — will collect in Step 5.` and continue (do not abort).
+Auth probe:
+- Check for token: `FIGMA_TOKEN` in process env, or a `FIGMA_TOKEN=` line in `.env`. Extract the value without running any script.
+- If no token found: print `→ No FIGMA_TOKEN found — will collect in Step 5.` and continue. Do NOT call validate-token.ts.
+- If token found: print `→ Verifying Figma auth…`, then run:
+  `FIGMA_TOKEN=<token> "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/validate-token.ts"`
+  - On success: print `✓ Auth confirmed — **<handle>**`
+  - On fail (bad token / 401): print `✗ Figma auth failed — <error>` and abort.
 
 ### Step 2 — Existing project detection
 
