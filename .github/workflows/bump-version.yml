@@ -1,0 +1,40 @@
+name: Bump plugin version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+      - "commands/**"
+      - ".claude-plugin/marketplace.json"
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch version
+        run: |
+          plugin=".claude-plugin/plugin.json"
+          marketplace=".claude-plugin/marketplace.json"
+
+          current=$(jq -r '.version' "$plugin")
+          IFS='.' read -r major minor patch <<< "$current"
+          next="$major.$minor.$((patch + 1))"
+
+          jq --arg v "$next" '.version = $v' "$plugin" > tmp.json && mv tmp.json "$plugin"
+          jq --arg v "$next" '.metadata.version = $v' "$marketplace" > tmp.json && mv tmp.json "$marketplace"
+
+          echo "Bumped $current → $next"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$plugin" "$marketplace"
+          git commit -m "chore: bump plugin version to $next [skip ci]"
+          git push
