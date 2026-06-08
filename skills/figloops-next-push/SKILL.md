@@ -43,7 +43,13 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
    }
 
    let page = figma.root.children.find(p => p.name === pageName);
-   if (!page) { page = figma.createPage(); page.name = pageName; }
+   if (!page) {
+     const blankPage1 = figma.root.children.find(
+       p => p.name === 'Page 1' && p.children.length === 0
+     );
+     if (blankPage1) { page = blankPage1; page.name = pageName; }
+     else { page = figma.createPage(); page.name = pageName; }
+   }
    await figma.setCurrentPageAsync(page);
    page.backgrounds = [{ type: 'SOLID', color: pageBg }];
 
