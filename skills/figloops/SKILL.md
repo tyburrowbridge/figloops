@@ -18,5 +18,6 @@ This skill is a fallback dispatch hub. Command files invoke phase-specific skill
 | `implement` | `figloops-next-implement` |
 | `close` | `figloops-next-close` |
 | `status` | Read `feedback/state.json`, print `Round <N> · phase: <phase>`, list `[FIGLOOPS]` tasks via TaskList. |
+| `reset` | `figloops-reset` |
 
 For `next` without a known phase: read `feedback/state.json` first, then invoke the matching skill from the table above.

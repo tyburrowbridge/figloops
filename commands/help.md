@@ -8,7 +8,7 @@ Read `feedback/state.json` in the current working directory if it exists.
 
 ````
 figloops
-User feedback loops for localhost prototypes.
+User feedback loops for web prototypes.
 
   CURRENT
   Round <round> · phase: <phase>
@@ -19,6 +19,7 @@ COMMANDS
   :status    Show round tracker without advancing
   :feedback  Show all user feedback to date (grouped by round)
   :themes    Show all clustered themes to date (grouped by round)
+  :reset     Restart the current round or discard all rounds
   :init      One-time project setup
   :help      This screen
 ````
@@ -44,7 +45,7 @@ Phase → next-action phrase:
 ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
 ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
 
-User feedback loops for localhost prototypes.
+User feedback loops for web prototypes.
 
   NOT INITIALIZED
   No figloops.config.json in this project.
