@@ -44,15 +44,15 @@ To pin to a specific release instead of tracking the default branch: `tyburrowbr
 
 ---
 
-## Use it (3 steps)
+## Use it
 
-In the repo where your dev server runs:
+| Step | Command | What it does |
+|---|---|---|
+| 1 | `/figloops:init` | One-time setup — validates credentials, collects routes, writes config. |
+| 2 | *(start your app)* | Local (`npm run dev`) or any deployed URL. |
+| 3 | `/figloops:next` | Runs the current phase autonomously, stops at the next gate. |
 
-1. **`/figloops:init`** — answers a few questions, validates everything, writes config + `.env` + state files.
-2. **Make sure your app is accessible** — local dev server (`npm run dev`) or a deployed URL (Vercel, Netlify, GitHub Pages, etc.).
-3. **`/figloops:next`** — run this whenever you're ready to advance. It runs everything it can autonomously and stops only when it needs your input.
-
-That's the whole loop. Re-run `/figloops:next` after each gate until the round closes.
+Repeat step 3 after each gate until the round closes.
 
 ---
 
