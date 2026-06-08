@@ -49,7 +49,7 @@ To pin to a specific release instead of tracking the default branch: `tyburrowbr
 In the repo where your dev server runs:
 
 1. **`/figloops:init`** — answers a few questions, validates everything, writes config + `.env` + state files.
-2. **Start your dev server** (e.g., `npm run dev`).
+2. **Make sure your app is accessible** — local dev server (`npm run dev`) or a deployed URL (Vercel, Netlify, GitHub Pages, etc.).
 3. **`/figloops:next`** — run this whenever you're ready to advance. It runs everything it can autonomously and stops only when it needs your input.
 
 That's the whole loop. Re-run `/figloops:next` after each gate until the round closes.
@@ -64,7 +64,7 @@ You'll mostly only use `:next`.
 |---|---|
 | `/figloops:init` | One-time project setup wizard. |
 | `/figloops:next` | Workhorse — runs the current phase, stops at the next gate. |
-| `/figloops:status` | Read-only view of the round tracker. |
+| `/figloops:status` | Round tracker + Figma connection health check (PAT + MCP). |
 | `/figloops:feedback` | Show all user feedback to date, grouped by round and frame. |
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
 | `/figloops:reset` | Restart the current round or discard all rounds and start fresh. |
@@ -110,12 +110,6 @@ You'll mostly only use `:next`.
 
 ## For contributors
 
-```bash
-npm install
-npm test       # 58 unit + integration tests
-npm run build  # type-check only
-```
-
-Before tagging a release, run the **manual smoke test** end-to-end against a throwaway Figma file (the MCP integration can't be tested in CI). The full procedure walks: init → capture → push → comment → pull → review → cluster → approve → implement → close, asserting state and Figma side-effects at each step.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, test commands, and the manual smoke test procedure.
 
 Architecture and detailed phase prose: `docs/superpowers/specs/2026-05-20-figloops-v1-design.md` and `skills/figloops/SKILL.md`.
