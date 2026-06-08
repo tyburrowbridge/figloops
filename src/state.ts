@@ -44,7 +44,7 @@ const pushManifestSchema = z.object({
     z.object({
       label: z.string().min(1),
       frameId: z.string().min(1),
-      imageHash: z.string().min(1),
+      imageHash: z.string().min(1).optional(),
     }),
   ),
 });
