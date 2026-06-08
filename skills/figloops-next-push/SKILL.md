@@ -51,7 +51,7 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      else { page = figma.createPage(); page.name = pageName; }
    }
    await figma.setCurrentPageAsync(page);
-   page.backgrounds = [{ type: 'SOLID', color: pageBg }];
+   page.backgrounds = [{ type: 'SOLID', color: pageBg, opacity: 1 }];
 
    await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
 
