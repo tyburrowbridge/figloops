@@ -388,7 +388,7 @@ Merge these entries into `.claude/settings.json` in the project root (create if 
   "permissions": {
     "allow": [
       "Bash(curl -s http://localhost*)",
-      "Bash(*figloops*/node_modules/.bin/tsx *figloops*/scripts/*)"
+      "Bash(*/.claude/plugins/cache/figloops/*/node_modules/.bin/tsx */.claude/plugins/cache/figloops/*/scripts/*)"
     ]
   }
 }
