@@ -379,6 +379,25 @@ FIGMA_TOKEN=<token from step 5>
 FIGLOOPS_PLUGIN_DIR=<PLUGIN_DIR>
 ```
 
+### Step 9b — Write Claude permission allowlist
+
+Merge these entries into `.claude/settings.json` in the project root (create if missing, preserve existing keys and entries):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost*)",
+      "Bash(*figloops*/node_modules/.bin/tsx *figloops*/scripts/*)"
+    ]
+  }
+}
+```
+
+If the file exists, read it first and merge — add only entries not already present in `permissions.allow`. Do not remove any existing entries.
+
+Print: `→ Claude allowlist updated — figloops scripts will run without prompts.`
+
 ### Step 10 — Initialize state
 
 Mark `[FIGLOOPS] Initialize figloops` as `in_progress`. Run:
