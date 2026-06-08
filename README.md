@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  A Claude Code plugin that bridges the gap between live code and design-led user feedback. Automatically **snapshot URLs into Figma frames**, **ingest user comments**, **analyze UX themes**, and **generate actionable UI updates and release notes** — all structured by iteration rounds.
+  A Claude Code plugin that bridges the gap between live code and design-led user feedback. Automatically <strong>snapshot URLs into Figma frames</strong>, <strong>ingest user comments</strong>, <strong>analyze UX themes</strong>, and <strong>generate actionable UI updates and release notes</strong> — all structured by iteration rounds.
 </p>
 
 
