@@ -23,13 +23,11 @@
 
 ## Requirements
 
-| | |
-|---|---|
-| Claude Code | Any version |
-| Node.js | 20+ |
-| Figma account | Edit access to a file *(recommended: a dedicated file — figloops creates pages on every round)* |
-| Figma Personal Access Token | [Generate one](https://www.figma.com/developers/api#access-tokens) |
-| Figma MCP server | [Setup guide](https://github.com/figma/mcp-server-guide) *(remote mode)* |
+- [ ] **Claude Code** (any version)
+- [ ] **Node.js 20+**
+- [ ] **Figma account** with edit access — *(recommended: a dedicated file, figloops creates pages on every round)*
+- [ ] **Figma Personal Access Token** — [generate one](https://www.figma.com/developers/api#access-tokens)
+- [ ] **Figma MCP server** connected — [setup guide](https://github.com/figma/mcp-server-guide) *(remote mode)*
 
 `/figloops:init` validates all of these and tells you what's missing.
 
