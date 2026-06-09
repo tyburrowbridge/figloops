@@ -19,6 +19,7 @@ COMMANDS
   :status    Show round tracker without advancing
   :feedback  Show all user feedback to date (grouped by round)
   :themes    Show all clustered themes to date (grouped by round)
+  :summary   One-table rollup of all rounds to date
   :restart   Restart the current round or discard all rounds
   :init      One-time project setup
   :help      This screen
@@ -57,6 +58,7 @@ COMMANDS
   :status    Show round tracker
   :feedback  Show all user feedback to date
   :themes    Show all clustered themes to date
+  :summary   One-table rollup of all rounds to date
   :help      This screen
 
 Requires: Figma MCP connected, Figma PAT

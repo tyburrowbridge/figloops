@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.0 — 2026-06-09
+
+### Features
+- `/figloops:summary` — one-table rollup of every round (status, phase, ASCII progress bar against the 9-phase pipeline, captures, comments, themes, plan, completion date in `MMM DD YYYY` format)
+
 ## v1.2.1 — 2026-06-09
 
 ### Breaking
