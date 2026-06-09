@@ -99,8 +99,9 @@ function renderPlan(round: RoundData): string {
   for (const [themeName, items] of byTheme) {
     lines.push(`### ${themeName}`);
     for (const item of items) {
-      const check = item.status === 'shipped' ? '[✓]' : '[ ]';
-      lines.push(`- ${check} ${item.change}`);
+      const check = item.status === 'shipped' ? '[✓]' : item.status === 'wontdo' ? '[✗]' : item.status === 'removed' ? '[—]' : '[ ]';
+      const thread = item.commentId ? ` · thread:${item.commentId}` : '';
+      lines.push(`- ${check} ${item.change}${thread}`);
       lines.push(`      Drives from: ${citeMany(round.comments, item.drivesFrom)}`);
     }
     lines.push('');

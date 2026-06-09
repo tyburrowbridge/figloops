@@ -162,4 +162,26 @@ describe('renderSnapshot', () => {
     expect(md).toContain('Round 1');
     expect(md).toContain('_no captures yet_');
   });
+
+  it('renders status checkbox per new enum and appends thread marker when commentId set', () => {
+    const stateWithThread: State = {
+      ...baseState,
+      rounds: {
+        '2': {
+          ...baseState.rounds['2'],
+          plan: [
+            { id: 'p1', themeName: 'T', change: 'A', drivesFrom: [], status: 'shipped', commentId: 'cm-1' },
+            { id: 'p2', themeName: 'T', change: 'B', drivesFrom: [], status: 'wontdo' },
+            { id: 'p3', themeName: 'T', change: 'C', drivesFrom: [], status: 'pending', commentId: 'cm-3' },
+            { id: 'p4', themeName: 'T', change: 'D', drivesFrom: [], status: 'removed' },
+          ],
+        },
+      },
+    };
+    const md = renderSnapshot(stateWithThread, 2);
+    expect(md).toContain('[✓] A · thread:cm-1');
+    expect(md).toContain('[✗] B');
+    expect(md).toContain('[ ] C · thread:cm-3');
+    expect(md).toContain('[—] D');
+  });
 });
