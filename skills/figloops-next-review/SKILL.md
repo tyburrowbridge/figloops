@@ -19,25 +19,24 @@ TS exits non-zero → relay stderr verbatim, don't advance.
 
 1. Mark `[FIGLOOPS] Review comments` as `in_progress`.
 
-2. Read `feedback/state.json`. Group comments by `frameLabel`. Assign a per-round global sequence number (`#` column: 1, 2, 3, … continuous across all frames in the round — do not reset per frame). The Figma comment ID stays in state for traceability but is not surfaced here.
+2. Read `feedback/state.json` and `figloops.config.json` (for `figma.fileKey`). Sort comments by `frameLabel` (insertion order of first appearance) then by insertion order within a frame. Assign a per-round global sequence number (`#` column: 1, 2, 3, … continuous across all frames — do not reset per frame).
 
-   Render a sub-table per frame. Frame groups appear in first-comment-insertion order; comments within a frame keep insertion order.
+   Render a **single** table with columns `# | 🖼️ Frame | 👤 User | 💬 Comment | 🔗 Link`. The Figma comment ID stays in state for traceability but is not surfaced as a column.
+
+   **Link construction (per row):**
+   - Encode the comment's `nodeId` with `:` → `%3A` (e.g. `12:345` → `12%3A345`).
+   - URL: `https://www.figma.com/design/<fileKey>/?node-id=<encodedNodeId>#<commentId>`
+   - Markdown: `[View](<url>)`
+   - If `nodeId` is null, render `—` (no link).
 
    ```
    🔍 Round <round> — Comments to review (<N> total)
 
-   #### Frame: 01 - Login
-
-   | # | Author | Comment |
-   |---|---|---|
-   | 1 | Sarah Lee | The CTA below the form is hard to find. |
-   | 2 | Mike Chen | Form copy is unclear; add helper text. |
-
-   #### Frame: 02 - Dashboard
-
-   | # | Author | Comment |
-   |---|---|---|
-   | 3 | Sarah Lee | Nav doesn't show what's active. |
+   | # | 🖼️ Frame      | 👤 User    | 💬 Comment                                   | 🔗 Link |
+   |---|---------------|------------|----------------------------------------------|---------|
+   | 1 | 01 - Login    | Sarah Lee  | The CTA below the form is hard to find.      | [View](https://www.figma.com/design/<fileKey>/?node-id=12%3A345#1234567890_1) |
+   | 2 | 01 - Login    | Mike Chen  | Form copy is unclear; add helper text.       | [View](https://www.figma.com/design/<fileKey>/?node-id=12%3A345#1234567890_2) |
+   | 3 | 02 - Dashboard | Sarah Lee | Nav doesn't show what's active.              | [View](https://www.figma.com/design/<fileKey>/?node-id=12%3A678#1234567890_3) |
 
    Your Figma file: <URL>
    ```

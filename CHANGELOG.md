@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.4.6 — 2026-06-09
+
+### Features
+- Comment review now renders a **single** table with columns `# | 🖼️ Frame | 👤 User | 💬 Comment | 🔗 Link`. The Link column deep-links each row to the comment in Figma (`https://www.figma.com/design/<fileKey>/?node-id=<nodeId>#<commentId>`) so reviewers can jump straight to the thread
+
+### Internal
+- `Comment` schema gains optional `nodeId` field (preserved from Figma REST response); `pull-comments.ts` populates it
+
+## v1.4.5 — 2026-06-09
+
+### Fixes
+- Canvas background detection: `sampleLuminance` now walks DOM ancestors until an opaque background is found (falls back to body/html). Previously, transparent center elements returned `rgba(0,0,0,0)` and falsely cached `uiTheme: 'dark'`, causing the push page background to render light (`#F0F0F0`) instead of dark (`#1E1E1E`)
+- Hardened `figloops-next-push` skill: `pageBg`/`labelClr` resolved outside embedded JS as inline literals (no ternary in the substituted script), `page.backgrounds` force-overwritten, and `appliedBg` returned + verified before uploads to catch silent bg-set failures
+
+## v1.4.4 — 2026-06-09
+
+### Polish
+- `/figloops:whatsnew` rendered in a scannable stripe layout — version + date header bar, two-space indent, category icons (✨ features, ⚡ perf, 🔧 fixes, 🎨 polish, ⚠️ breaking, 🔒 security) per item, hanging-indent wrap
+
 ## v1.4.3 — 2026-06-09
 
 ### Polish
