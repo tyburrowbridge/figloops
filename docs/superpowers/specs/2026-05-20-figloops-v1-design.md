@@ -1,3 +1,5 @@
+> **Note (2026-06-09):** Sections covering Phase 7 (plan-approval) and Phase 8 (implement) are superseded by [`2026-06-09-figloops-plan-ack-refactor-design.md`](2026-06-09-figloops-plan-ack-refactor-design.md). All other sections remain authoritative.
+
 # figloops — Design
 
 **Date:** 2026-05-20
