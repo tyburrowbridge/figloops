@@ -8,4 +8,4 @@ description: Restart or discard the current round
    ```
    If missing: print `"No active round. Run /figloops:init to set up."` Stop.
 
-2. Invoke skill `figloops-reset`.
+2. Invoke skill `figloops-restart`.

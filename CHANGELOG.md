@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.1 — 2026-06-09
+
+### Breaking
+- Renamed `/figloops:reset` → `/figloops:restart` (skill `figloops-reset` → `figloops-restart`)
+
 ## v1.2.0 — 2026-06-09
 
 ### Features

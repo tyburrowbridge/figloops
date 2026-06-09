@@ -76,7 +76,7 @@ You'll mostly only use `:next`.
 | `/figloops:status` | Round tracker + Figma connection health check (PAT + MCP). |
 | `/figloops:feedback` | Show all user feedback to date, grouped by round and frame. |
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
-| `/figloops:reset` | Restart the current round or discard all rounds and start fresh. |
+| `/figloops:restart` | Restart the current round or discard all rounds and start fresh. |
 | `/figloops:help` | Lists commands and shows where you are. |
 
 ---

@@ -19,7 +19,7 @@ COMMANDS
   :status    Show round tracker without advancing
   :feedback  Show all user feedback to date (grouped by round)
   :themes    Show all clustered themes to date (grouped by round)
-  :reset     Restart the current round or discard all rounds
+  :restart   Restart the current round or discard all rounds
   :init      One-time project setup
   :help      This screen
 ````
