@@ -85,7 +85,7 @@ You'll mostly only use `:next`.
 
 ## What happens in a round
 
-`/figloops:next` walks 9 phases. You only have to act at the 5 gates.
+`/figloops:next` walks 8 phases. You only have to act at the 4 gates (3 in terminal, 1 in Figma).
 
 | # | Phase | Gate |
 |---|---|---|
@@ -95,9 +95,8 @@ You'll mostly only use `:next`.
 | 4 | Pull comments | — |
 | 5 | Review comments | Continue · Pull again · Cancel |
 | 6 | Cluster themes | — |
-| 7 | Approve plan | Approve all · Approve some · Edit one · Reject all |
-| 8 | Implement changes | Mark items shipped · Close round |
-| 9 | Close round | — |
+| 7 | Ack plan in Figma | Resolve threads or reply `/skip` in Figma; re-run `:next` to advance |
+| 8 | Close round | — |
 
 ---
 
