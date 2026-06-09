@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.4 — 2026-06-09
+
+### Polish
+- `/figloops:whatsnew` rendered in a scannable stripe layout — version + date header bar, two-space indent, category icons (✨ features, ⚡ perf, 🔧 fixes, 🎨 polish, ⚠️ breaking, 🔒 security) per item, hanging-indent wrap
+
 ## v1.4.3 — 2026-06-09
 
 ### Polish
