@@ -1,5 +1,5 @@
 ---
-name: figloops-reset
+name: figloops-restart
 description: Restart or discard the current round
 ---
 
@@ -23,8 +23,8 @@ State load fail → abort. TS exits non-zero → relay stderr verbatim.
 
 3. Ask:
    ```
-   question: "What do you want to reset?"
-   header: "Reset"
+   question: "What do you want to restart?"
+   header: "Restart"
    options:
      - label: "Restart this round — wipe Round N data, go back to capture"
      - label: "Discard everything — archive state and start fresh"
@@ -41,7 +41,7 @@ State load fail → abort. TS exits non-zero → relay stderr verbatim.
 
    | | |
    |---|---|
-   | Phase reset | `capture` |
+   | Phase restart | `capture` |
    | State wiped | captures, pushManifest, comments, themes, plan for Round N |
    | Files deleted | `feedback/round-N/captures/` |
    | Figma page | If pushed: **must delete manually** (figloops cannot delete Figma pages) |
@@ -76,7 +76,7 @@ State load fail → abort. TS exits non-zero → relay stderr verbatim.
 
 10. Print:
     ```
-    ✓ Round N reset to capture phase.
+    ✓ Round N restarted to capture phase.
     → Run /figloops:next to capture screenshots.
     ```
     If a push manifest existed, re-print the manual Figma page deletion reminder.

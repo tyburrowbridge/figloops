@@ -31,6 +31,7 @@
 //     | tsx scripts/probe-routes.ts
 
 import { readFileSync } from 'node:fs';
+import { createProgress, type ProgressReporter } from '../src/progress.js';
 
 interface RouteIn {
   label: string;
@@ -120,12 +121,18 @@ async function fetchEntryLinks(baseUrl: string): Promise<{ reachable: boolean; l
   }
 }
 
-async function probeOne(baseUrl: string, route: RouteIn, entryLinks: Set<string>): Promise<RouteResult> {
+async function probeOne(
+  baseUrl: string,
+  route: RouteIn,
+  entryLinks: Set<string>,
+  progress: ProgressReporter | null,
+): Promise<RouteResult> {
   const target = new URL(route.path, baseUrl).toString();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
   const normPath = normalizePath(route.path, baseUrl) ?? route.path;
   const linkedFromEntry = entryLinks.has(normPath);
+  const start = performance.now();
 
   try {
     const res = await fetch(target, {
@@ -134,22 +141,26 @@ async function probeOne(baseUrl: string, route: RouteIn, entryLinks: Set<string>
       signal: controller.signal,
     });
     const finalUrl = res.url && res.url !== target ? res.url : undefined;
+    const reachable = res.status >= 200 && res.status < 400;
+    progress?.tick(route.label, reachable, performance.now() - start, reachable ? undefined : `HTTP ${res.status}`);
     return {
       label: route.label,
       path: route.path,
       status: res.status,
-      reachable: res.status >= 200 && res.status < 400,
+      reachable,
       linkedFromEntry,
       ...(finalUrl ? { finalUrl } : {}),
     };
   } catch (err) {
+    const msg = (err as Error).message;
+    progress?.tick(route.label, false, performance.now() - start, msg);
     return {
       label: route.label,
       path: route.path,
       status: null,
       reachable: false,
       linkedFromEntry,
-      error: (err as Error).message,
+      error: msg,
     };
   } finally {
     clearTimeout(timer);
@@ -159,7 +170,9 @@ async function probeOne(baseUrl: string, route: RouteIn, entryLinks: Set<string>
 export async function probeRoutes(args: { baseUrl: string; routes: RouteIn[] }): Promise<ProbeResult> {
   const entry = await fetchEntryLinks(args.baseUrl);
   const entrySet = new Set(entry.links);
-  const results = await Promise.all(args.routes.map((r) => probeOne(args.baseUrl, r, entrySet)));
+  const progress = args.routes.length > 0 ? createProgress(args.routes.length, 'probe') : null;
+  const results = await Promise.all(args.routes.map((r) => probeOne(args.baseUrl, r, entrySet, progress)));
+  progress?.done();
   return { serverReachable: entry.reachable, entryLinks: entry.links, routes: results };
 }
 

@@ -57,7 +57,7 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ```
    Invoke skill `figloops-next-cluster`.
 
-5. **On "Pull again":** re-run `pull-comments.ts`, regenerate snapshot, re-render the comment list, ask again with the same 3 options.
+5. **On "Pull again":** re-run `pull-comments.ts`, re-render the comment list, ask again with the same 3 options.
 
 6. **On "Cancel round":** run:
    ```bash

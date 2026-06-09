@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
+import { createProgress, type ProgressReporter } from '../src/progress.js';
 
 export interface CaptureRoute {
   label: string;
@@ -24,6 +25,7 @@ export interface CaptureArgs {
   waitFor: 'networkidle' | 'load' | 'domcontentloaded';
   routes: CaptureRoute[];
   scenarios?: CaptureScenario[];
+  cachedTheme?: UiTheme;
 }
 
 export interface CaptureResult {
@@ -31,6 +33,31 @@ export interface CaptureResult {
   failed: Array<{ label: string; error: string }>;
   uiTheme: UiTheme;
 }
+
+interface CaptureItem {
+  label: string;
+  path: string;
+  waitFor?: string;
+  setup?: string[];
+}
+
+interface WorkerSuccess {
+  kind: 'ok';
+  index: number;
+  label: string;
+  filename: string;
+  path: string;
+  luminance: number | null;
+}
+
+interface WorkerFailure {
+  kind: 'err';
+  index: number;
+  label: string;
+  error: string;
+}
+
+type WorkerResult = WorkerSuccess | WorkerFailure;
 
 function slug(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -56,53 +83,100 @@ async function sampleLuminance(page: Page): Promise<number | null> {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+async function processItem(
+  browser: Browser,
+  args: CaptureArgs,
+  item: CaptureItem,
+  index: number,
+  skipLuminance: boolean,
+  progress: ProgressReporter | null,
+): Promise<WorkerResult> {
+  const url = new URL(item.path, args.baseUrl).toString();
+  const filename = `${String(index + 1).padStart(2, '0')}-${slug(item.label)}.jpg`;
+  const out = join(args.outputDir, filename);
+  const start = performance.now();
+  const ctx = await browser.newContext({ viewport: args.viewport });
+  try {
+    const page = await ctx.newPage();
+    await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
+    for (const sel of item.setup ?? []) {
+      // Auto-waits for the element to be actionable. 10s is enough for any
+      // post-navigation interaction; longer just stalls broken scenarios.
+      await page.click(sel, { timeout: 10_000 });
+    }
+    if (item.waitFor) {
+      await page.waitForSelector(item.waitFor, { timeout: 10_000 });
+    }
+    const luminance = skipLuminance ? null : await sampleLuminance(page);
+    await page.screenshot({ path: out, fullPage: true, type: 'jpeg', quality: 85 });
+    progress?.tick(item.label, true, performance.now() - start);
+    return { kind: 'ok', index, label: item.label, filename, path: out, luminance };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    progress?.tick(item.label, false, performance.now() - start, message);
+    return { kind: 'err', index, label: item.label, error: message };
+  } finally {
+    await ctx.close();
+  }
+}
+
 export async function capture(args: CaptureArgs): Promise<CaptureResult> {
   mkdirSync(args.outputDir, { recursive: true });
   const browser: Browser = await chromium.launch();
   try {
-    const ctx = await browser.newContext({ viewport: args.viewport });
-    const page = await ctx.newPage();
-    const captures: CaptureResult['captures'] = [];
-    const failed: CaptureResult['failed'] = [];
-    const luminanceSamples: number[] = [];
-
     // Routes first, then scenarios — both produce numbered captures in one list.
-    const items: Array<CaptureRoute & { setup?: string[] }> = [
+    const items: CaptureItem[] = [
       ...args.routes,
       ...(args.scenarios ?? []),
     ];
 
+    const skipLuminance = args.cachedTheme !== undefined;
+    const concurrency = Math.min(4, Math.max(1, items.length));
+    const results = new Map<number, WorkerResult>();
+    let next = 0;
+
+    const progress = items.length > 0 ? createProgress(items.length, 'capture') : null;
+
+    const workers: Array<Promise<void>> = [];
+    for (let w = 0; w < concurrency; w++) {
+      workers.push(
+        (async () => {
+          while (true) {
+            const i = next++;
+            if (i >= items.length) return;
+            const res = await processItem(browser, args, items[i], i, skipLuminance, progress);
+            results.set(i, res);
+          }
+        })(),
+      );
+    }
+    await Promise.all(workers);
+    progress?.done();
+
+    const captures: CaptureResult['captures'] = [];
+    const failed: CaptureResult['failed'] = [];
+    const luminanceSamples: number[] = [];
     for (let i = 0; i < items.length; i++) {
-      const r = items[i];
-      const url = new URL(r.path, args.baseUrl).toString();
-      const filename = `${String(i + 1).padStart(2, '0')}-${slug(r.label)}.png`;
-      const out = join(args.outputDir, filename);
-      try {
-        await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
-        for (const sel of r.setup ?? []) {
-          // Auto-waits for the element to be actionable. 10s is enough for any
-          // post-navigation interaction; longer just stalls broken scenarios.
-          await page.click(sel, { timeout: 10_000 });
-        }
-        if (r.waitFor) {
-          await page.waitForSelector(r.waitFor, { timeout: 10_000 });
-        }
-        const lum = await sampleLuminance(page);
-        if (lum !== null) luminanceSamples.push(lum);
-        await page.screenshot({ path: out, fullPage: true });
-        captures.push({ label: r.label, path: out, filename });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        failed.push({ label: r.label, error: message });
-        process.stderr.write(`[capture] skipped ${r.label}: ${message}\n`);
+      const r = results.get(i);
+      if (!r) continue;
+      if (r.kind === 'ok') {
+        captures.push({ label: r.label, path: r.path, filename: r.filename });
+        if (r.luminance !== null) luminanceSamples.push(r.luminance);
+      } else {
+        failed.push({ label: r.label, error: r.error });
       }
     }
 
-    const avgLuminance =
-      luminanceSamples.length > 0
-        ? luminanceSamples.reduce((a, b) => a + b, 0) / luminanceSamples.length
-        : 0.5;
-    const uiTheme: UiTheme = avgLuminance > 0.4 ? 'light' : 'dark';
+    let uiTheme: UiTheme;
+    if (args.cachedTheme !== undefined) {
+      uiTheme = args.cachedTheme;
+    } else {
+      const avgLuminance =
+        luminanceSamples.length > 0
+          ? luminanceSamples.reduce((a, b) => a + b, 0) / luminanceSamples.length
+          : 0.5;
+      uiTheme = avgLuminance > 0.4 ? 'light' : 'dark';
+    }
 
     return { captures, failed, uiTheme };
   } finally {
@@ -130,6 +204,7 @@ async function main() {
       setup: s.setup,
       waitFor: s.waitFor,
     })),
+    cachedTheme: state.uiTheme,
   });
 
   // Persist into state.json for the current round.
