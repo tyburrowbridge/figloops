@@ -25,7 +25,7 @@ describe('update-plan set', () => {
     const stdin = JSON.stringify({
       action: 'set',
       items: [
-        { id: 'p1', themeName: 'Nav', change: 'breadcrumbs', drivesFrom: ['12'], status: 'proposed' },
+        { id: 'p1', themeName: 'Nav', change: 'breadcrumbs', drivesFrom: ['12'], status: 'pending' },
       ],
     });
     execSync(`${TSX} ${SCRIPT}`, { cwd: dir, input: stdin });
@@ -39,32 +39,32 @@ describe('update-plan status', () => {
   beforeEach(() => {
     const s = loadState(join(dir, 'feedback', 'state.json'));
     s.rounds['1'].plan = [
-      { id: 'p1', themeName: 'Nav', change: 'breadcrumbs', drivesFrom: ['12'], status: 'proposed' },
-      { id: 'p2', themeName: 'Nav', change: 'highlight', drivesFrom: ['12'], status: 'proposed' },
+      { id: 'p1', themeName: 'Nav', change: 'breadcrumbs', drivesFrom: ['12'], status: 'pending' },
+      { id: 'p2', themeName: 'Nav', change: 'highlight', drivesFrom: ['12'], status: 'pending' },
     ];
     writeState(join(dir, 'feedback', 'state.json'), s);
   });
 
   it('updates a single item status', () => {
-    const stdin = JSON.stringify({ action: 'status', updates: [{ id: 'p1', status: 'approved' }] });
+    const stdin = JSON.stringify({ action: 'status', updates: [{ id: 'p1', status: 'shipped' }] });
     execSync(`${TSX} ${SCRIPT}`, { cwd: dir, input: stdin });
     const s = loadState(join(dir, 'feedback', 'state.json'));
-    expect(s.rounds['1'].plan.find((p) => p.id === 'p1')!.status).toBe('approved');
-    expect(s.rounds['1'].plan.find((p) => p.id === 'p2')!.status).toBe('proposed');
+    expect(s.rounds['1'].plan.find((p) => p.id === 'p1')!.status).toBe('shipped');
+    expect(s.rounds['1'].plan.find((p) => p.id === 'p2')!.status).toBe('pending');
   });
 
   it('updates multiple items in one call', () => {
     const stdin = JSON.stringify({
       action: 'status',
       updates: [
-        { id: 'p1', status: 'approved' },
-        { id: 'p2', status: 'rejected' },
+        { id: 'p1', status: 'shipped' },
+        { id: 'p2', status: 'wontdo' },
       ],
     });
     execSync(`${TSX} ${SCRIPT}`, { cwd: dir, input: stdin });
     const s = loadState(join(dir, 'feedback', 'state.json'));
-    expect(s.rounds['1'].plan.find((p) => p.id === 'p1')!.status).toBe('approved');
-    expect(s.rounds['1'].plan.find((p) => p.id === 'p2')!.status).toBe('rejected');
+    expect(s.rounds['1'].plan.find((p) => p.id === 'p1')!.status).toBe('shipped');
+    expect(s.rounds['1'].plan.find((p) => p.id === 'p2')!.status).toBe('wontdo');
   });
 
   it('errors loudly if an item id is unknown', () => {

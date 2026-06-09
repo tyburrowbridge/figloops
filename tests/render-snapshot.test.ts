@@ -3,9 +3,9 @@ import { renderSnapshot } from '../scripts/render-snapshot.js';
 import type { State } from '../src/state.js';
 
 const baseState: State = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   currentRound: 2,
-  currentPhase: 'implement',
+  currentPhase: 'plan-ack',
   rounds: {
     '2': {
       captures: [
@@ -59,7 +59,7 @@ const baseState: State = {
           themeName: 'Navigation clarity',
           change: 'Highlight active nav item',
           drivesFrom: ['12'],
-          status: 'approved',
+          status: 'pending',
         },
       ],
     },
