@@ -24,20 +24,15 @@ TS exits non-zero → relay stderr verbatim, don't retry. State load fail → ab
    ```
    Parse stdout JSON: `{ round, captures: [{label, path, filename}], failed: [] }`.
 
-3. Regenerate snapshot:
-   ```bash
-   "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/render-snapshot.ts"
-   ```
-
-4. **Preview gate.** Print a markdown table — one row per capture:
+3. **Preview gate.** Print a markdown table — one row per capture:
 
    ```
    📸 Captured N items for Round <round>:
 
    | # | Filename | Source | Figma frame |
    |---|---|---|---|
-   | 01 | `01-login.png` | route | "01 - Login" |
-   | 02 | `02-sign-up-modal.png` | scenario | "02 - Sign up modal" |
+   | 01 | `01-login.jpg` | route | "01 - Login" |
+   | 02 | `02-sign-up-modal.jpg` | scenario | "02 - Sign up modal" |
 
    Expected Figma layout on page "Round <round>": 3 columns wide, rows added as needed.
    ```
@@ -62,12 +57,12 @@ TS exits non-zero → relay stderr verbatim, don't retry. State load fail → ab
      - label: "Cancel"
    ```
 
-5. **On "Approve — push to Figma":** mark task `[FIGLOOPS] Capture screenshots` as `completed`. Run:
+4. **On "Approve — push to Figma":** mark task `[FIGLOOPS] Capture screenshots` as `completed`. Run:
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" push
    ```
    Then invoke skill `figloops-next-push`.
 
-6. **On "Re-capture":** re-run step 2.
+5. **On "Re-capture":** re-run step 2.
 
-7. **On "Cancel":** stop here. Do not advance state.
+6. **On "Cancel":** stop here. Do not advance state.
