@@ -1,6 +1,7 @@
 ---
 name: figloops-next-review
 description: Review phase — display comments by frame; gate on user decision
+user-invocable: false
 ---
 
 ## Setup

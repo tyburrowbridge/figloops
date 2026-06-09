@@ -1,6 +1,7 @@
 ---
 name: figloops-next-await
 description: Await phase — gate until Figma comments arrive
+user-invocable: false
 ---
 
 ## Setup

@@ -1,6 +1,7 @@
 ---
 name: figloops-restart
 description: Restart or discard the current round
+user-invocable: false
 ---
 
 ## Setup

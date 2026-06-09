@@ -1,6 +1,7 @@
 ---
 name: figloops-summary
 description: Render every round to date as a single status table
+user-invocable: false
 ---
 
 Read `feedback/state.json` in the current working directory.

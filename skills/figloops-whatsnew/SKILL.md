@@ -1,6 +1,7 @@
 ---
 name: figloops-whatsnew
 description: Show latest figloops release notes and check for available upgrade
+user-invocable: false
 ---
 
 Render figloops release notes and a remote version check. Do not invoke any other skill.

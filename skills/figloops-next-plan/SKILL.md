@@ -1,6 +1,7 @@
 ---
 name: figloops-next-plan
 description: Plan phase — present proposed changes; gate on approval
+user-invocable: false
 ---
 
 ## Setup

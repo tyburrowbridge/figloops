@@ -1,6 +1,7 @@
 ---
 name: figloops-next-cluster
 description: Cluster phase — group comments into themes and draft plan
+user-invocable: false
 ---
 
 ## Setup
