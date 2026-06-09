@@ -1,6 +1,7 @@
 ---
 name: figloops
 description: Phase dispatch hub
+user-invocable: false
 ---
 
 This skill is a fallback dispatch hub. Command files invoke phase-specific skills directly. If this skill is invoked with a phase argument, route to the matching skill:

@@ -1,5 +1,5 @@
 {
   "name": "figloops",
-  "version": "1.4.1",
-  "description": "Wizard-driven user feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans."
+  "version": "1.4.3",
+  "description": "A Claude Code plugin that bridges the gap between live code and design-led user feedback. Automatically snapshot URLs into Figma frames, ingest user comments, analyze UX themes, and generate actionable UI updates and release notes — all structured by iteration rounds."
 }

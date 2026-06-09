@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.3 — 2026-06-09
+
+### Polish
+- Updated plugin description in `plugin.json` + `marketplace.json` to match README tagline
+
+## v1.4.2 — 2026-06-09
+
+### Polish
+- Hide all internal skills from `/` slash-command picker via `user-invocable: false` frontmatter. Picker now shows only user-facing commands (`/figloops:init`, `:next`, `:status`, `:feedback`, `:themes`, `:summary`, `:restart`, `:whatsnew`, `:help`). Internal phase skills remain fully invokable via the Skill tool.
+
 ## v1.4.0 — 2026-06-09
 
 ### Features

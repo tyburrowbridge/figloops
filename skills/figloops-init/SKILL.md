@@ -1,6 +1,7 @@
 ---
 name: figloops-init
 description: Setup wizard — verifies MCP, PAT, Figma file; collects config
+user-invocable: false
 ---
 
 ## Setup

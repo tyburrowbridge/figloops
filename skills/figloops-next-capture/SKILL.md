@@ -1,6 +1,7 @@
 ---
 name: figloops-next-capture
 description: Capture phase — Playwright screenshots + preview gate
+user-invocable: false
 ---
 
 ## Setup

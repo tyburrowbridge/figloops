@@ -1,6 +1,7 @@
 ---
 name: figloops-next-implement
 description: Implement phase — track shipping of approved items
+user-invocable: false
 ---
 
 ## Setup

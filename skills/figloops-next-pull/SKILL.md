@@ -1,6 +1,7 @@
 ---
 name: figloops-next-pull
 description: Pull phase — fetch Figma comments and advance
+user-invocable: false
 ---
 
 ## Setup

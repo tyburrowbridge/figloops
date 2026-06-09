@@ -1,6 +1,7 @@
 ---
 name: figloops-next-close
 description: Close phase — write changelog and start next round
+user-invocable: false
 ---
 
 ## Setup

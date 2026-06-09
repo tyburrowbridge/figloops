@@ -1,6 +1,7 @@
 ---
 name: figloops-next-push
 description: Push phase — upload images and create Figma frames
+user-invocable: false
 ---
 
 ## Setup
