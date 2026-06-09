@@ -1,8 +1,10 @@
 // Zod schema + reader/writer for feedback/state.json — the source of truth
 // for figloops. Replaces the old src/round-state.ts (currentRound only).
 //
-// Shape is the v1 schema documented in
+// v2 schema. Original v1 documented in
 // docs/superpowers/specs/2026-05-20-figloops-v1-design.md (section "State model").
+// v2 changes in docs/superpowers/specs/2026-06-09-figloops-plan-ack-refactor-design.md.
+// Legacy v1 files auto-migrate on load via migrateV1ToV2.
 import { z } from 'zod';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
