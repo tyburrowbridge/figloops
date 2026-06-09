@@ -66,14 +66,24 @@ function slug(label: string): string {
 async function sampleLuminance(page: Page): Promise<number | null> {
   // Passed as a string so TypeScript doesn't type-check browser globals.
   const rgb = await page.evaluate<[number, number, number] | null>(`(() => {
-    const el = document.elementFromPoint(
+    const parse = (bg) => {
+      const m = bg && bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?/);
+      if (!m) return null;
+      const alpha = m[4] === undefined ? 1 : parseFloat(m[4]);
+      if (alpha === 0) return null;
+      return [+m[1], +m[2], +m[3]];
+    };
+    let el = document.elementFromPoint(
       Math.floor(window.innerWidth / 2),
       Math.floor(window.innerHeight / 2)
     );
-    const style = window.getComputedStyle(el || document.body);
-    const bg = style.backgroundColor;
-    const m = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
-    return m ? [+m[1], +m[2], +m[3]] : null;
+    while (el) {
+      const rgb = parse(window.getComputedStyle(el).backgroundColor);
+      if (rgb) return rgb;
+      el = el.parentElement;
+    }
+    return parse(window.getComputedStyle(document.body).backgroundColor)
+      || parse(window.getComputedStyle(document.documentElement).backgroundColor);
   })()`);
   if (!rgb) return null;
   const [r, g, b] = (rgb as [number, number, number]).map((c) => {

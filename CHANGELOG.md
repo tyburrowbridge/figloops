@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.5 — 2026-06-09
+
+### Fixes
+- Canvas background detection: `sampleLuminance` now walks DOM ancestors until an opaque background is found (falls back to body/html). Previously, transparent center elements returned `rgba(0,0,0,0)` and falsely cached `uiTheme: 'dark'`, causing the push page background to render light (`#F0F0F0`) instead of dark (`#1E1E1E`)
+- Hardened `figloops-next-push` skill: `pageBg`/`labelClr` resolved outside embedded JS as inline literals (no ternary in the substituted script), `page.backgrounds` force-overwritten, and `appliedBg` returned + verified before uploads to catch silent bg-set failures
+
 ## v1.4.4 — 2026-06-09
 
 ### Polish
