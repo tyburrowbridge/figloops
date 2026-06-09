@@ -76,7 +76,9 @@ You'll mostly only use `:next`.
 | `/figloops:status` | Round tracker + Figma connection health check (PAT + MCP). |
 | `/figloops:feedback` | Show all user feedback to date, grouped by round and frame. |
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
+| `/figloops:summary` | One-table rollup of every round (status, phase, counts, completion date). |
 | `/figloops:restart` | Restart the current round or discard all rounds and start fresh. |
+| `/figloops:whatsnew` | Release notes + check if a newer version is available on GitHub. |
 | `/figloops:help` | Lists commands and shows where you are. |
 
 ---
@@ -106,6 +108,19 @@ You'll mostly only use `:next`.
 - `feedback/state.json` — source of truth for all round data
 - `feedback/round-N/captures/*.png` — screenshots
 - `feedback/round-N/snapshot.md` — auto-generated audit of the round. **Don't edit — it's regenerated on every `:next`.**
+
+---
+
+## Upgrading
+
+Upgrades go through Claude Code's plugin manager:
+
+```
+/plugin update figloops
+/reload-plugins
+```
+
+After upgrading, run `/figloops:whatsnew` to see what changed and confirm you're on the latest release.
 
 ---
 
