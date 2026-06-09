@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.3 — 2026-06-09
+
+### Polish
+- Updated plugin description in `plugin.json` + `marketplace.json` to match README tagline
+
 ## v1.4.2 — 2026-06-09
 
 ### Polish

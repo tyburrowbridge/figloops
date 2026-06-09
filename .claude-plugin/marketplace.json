@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Local marketplace housing the figloops plugin.",
-    "version": "1.4.2"
+    "version": "1.4.3"
   },
   "plugins": [
     {
       "name": "figloops",
       "source": "./",
-      "description": "Wizard-driven user feedback loops: capture localhost prototypes into Figma, ingest comments, propose change plans.",
+      "description": "A Claude Code plugin that bridges the gap between live code and design-led user feedback. Automatically snapshot URLs into Figma frames, ingest user comments, analyze UX themes, and generate actionable UI updates and release notes — all structured by iteration rounds.",
       "category": "design",
       "tags": [
         "figma",
