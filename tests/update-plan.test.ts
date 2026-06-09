@@ -68,7 +68,7 @@ describe('update-plan status', () => {
   });
 
   it('errors loudly if an item id is unknown', () => {
-    const stdin = JSON.stringify({ action: 'status', updates: [{ id: 'nope', status: 'approved' }] });
+    const stdin = JSON.stringify({ action: 'status', updates: [{ id: 'nope', status: 'pending' }] });
     expect(() => execSync(`${TSX} ${SCRIPT}`, { cwd: dir, input: stdin, stdio: 'pipe' })).toThrow();
   });
 });
