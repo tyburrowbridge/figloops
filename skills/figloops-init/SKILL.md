@@ -410,15 +410,14 @@ Mark `[FIGLOOPS] Initialize figloops` as `completed`.
 
 ### Step 11 — Create round tracker
 
-Call `TaskCreate` 9 times in a single message (all `pending`):
+Call `TaskCreate` 8 times in a single message (all `pending`):
 - `[FIGLOOPS] Capture screenshots`
 - `[FIGLOOPS] Push to Figma`
 - `[FIGLOOPS] Wait for user comments`
 - `[FIGLOOPS] Pull comments`
 - `[FIGLOOPS] Review comments`
 - `[FIGLOOPS] Cluster themes`
-- `[FIGLOOPS] Approve plan`
-- `[FIGLOOPS] Implement changes`
+- `[FIGLOOPS] Ack plan in Figma`
 - `[FIGLOOPS] Close round`
 
 ### Step 12 — Ready summary
