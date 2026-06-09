@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.1.0 — 2026-06-09
+
+### Performance
+- Parallel curl uploads in push phase (was serial; saves 30-60s/round at 5-10 captures)
+- JPEG quality 85 screenshots replace PNG (~60% smaller, faster uploads)
+- Parallel Playwright contexts during capture (pool of 4)
+- SHA-256 image hash dedup: re-pushes skip unchanged frames
+- Cached `uiTheme` skips luminance sampling on re-captures
+- Dropped redundant snapshot regeneration after capture and review phases
+
+### Notes
+- Capture filenames now end in `.jpg` instead of `.png`. Push pipeline auto-detects extension and content type.
+
 ## v1.0.0 — 2026-06-08
 
 Initial public release.
