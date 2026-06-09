@@ -2,12 +2,12 @@
 description: List commands; show current phase if a round is active
 ---
 
-Read `feedback/state.json` in the current working directory if it exists.
+Read `feedback/state.json` in the current working directory if it exists. Also read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` and parse its `version` field — use this as `<version>` in both rendered screens below. If the read fails, render `?.?.?` for `<version>`.
 
-**If the file exists**, parse `currentRound` and `currentPhase`, then print the following (replace `<round>` and `<phase>` with the values; for `<next-action>` use the phrase appropriate to the phase — see table below). Do not call any other tools.
+**If the file exists**, parse `currentRound` and `currentPhase`, then print the following (replace `<version>`, `<round>` and `<phase>` with the values; for `<next-action>` use the phrase appropriate to the phase — see table below). Do not call any other tools beyond the two reads above.
 
 ````
-figloops
+figloops v<version>
 User feedback loops for web prototypes.
 
   CURRENT
@@ -22,6 +22,7 @@ COMMANDS
   :summary   One-table rollup of all rounds to date
   :restart   Restart the current round or discard all rounds
   :init      One-time project setup
+  :whatsnew  Show release notes + check for available upgrade
   :help      This screen
 ````
 
@@ -45,6 +46,7 @@ Phase → next-action phrase:
 ██╔══╝  ██║██║   ██║██║     ██║   ██║██║   ██║██╔═══╝ ╚════██║
 ██║     ██║╚██████╔╝███████╗╚██████╔╝╚██████╔╝██║     ███████║
 ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚══════╝
+                                                          v<version>
 
 User feedback loops for web prototypes.
 
@@ -59,6 +61,7 @@ COMMANDS
   :feedback  Show all user feedback to date
   :themes    Show all clustered themes to date
   :summary   One-table rollup of all rounds to date
+  :whatsnew  Show release notes + check for available upgrade
   :help      This screen
 
 Requires: Figma MCP connected, Figma PAT

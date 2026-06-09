@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0 — 2026-06-09
+
+### Features
+- `/figloops:whatsnew` — pull-only release notes viewer; shows installed version, latest CHANGELOG entries, and checks GitHub raw `plugin.json` to recommend `/plugin update figloops` when a newer version exists
+- `/figloops:help` now renders the installed version on both initialized and not-initialized screens
+
 ## v1.3.0 — 2026-06-09
 
 ### Features
