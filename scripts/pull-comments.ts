@@ -31,6 +31,7 @@ async function main() {
   const enriched: Comment[] = filtered.map((c) => ({
     id: c.id,
     frameLabel: c.nodeId ? frameById.get(c.nodeId) ?? null : null,
+    nodeId: c.nodeId,
     authorName: c.authorName,
     authorHandle: c.authorHandle,
     message: c.message,

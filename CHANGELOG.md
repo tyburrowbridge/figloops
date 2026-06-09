@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.6 — 2026-06-09
+
+### Features
+- Comment review now renders a **single** table with columns `# | 🖼️ Frame | 👤 User | 💬 Comment | 🔗 Link`. The Link column deep-links each row to the comment in Figma (`https://www.figma.com/design/<fileKey>/?node-id=<nodeId>#<commentId>`) so reviewers can jump straight to the thread
+
+### Internal
+- `Comment` schema gains optional `nodeId` field (preserved from Figma REST response); `pull-comments.ts` populates it
+
 ## v1.4.5 — 2026-06-09
 
 ### Fixes
