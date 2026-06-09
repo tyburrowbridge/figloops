@@ -604,7 +604,7 @@ describe('deleteComment', () => {
 Update the import line at the top of `tests/figma-client.test.ts` to include the new names:
 
 ```ts
-import { uploadImage, fetchComments, filterCommentsByFrameIds, getMe, getFile, postComment, postReply, deleteComment } from '../src/figma-client.js';
+import { fetchComments, filterCommentsByFrameIds, getMe, getFile, postComment, postReply, deleteComment } from '../src/figma-client.js';
 ```
 
 ### Step 2.3: Run tests to verify they fail
