@@ -37,12 +37,19 @@ describe('buildPlanFramePayload', () => {
     expect(payload).toContain('"id":"p2"');
   });
 
-  it('escapes backticks and dollar signs in change text', () => {
+  it('escapes pageName for safe embedding in outer template literal', () => {
+    const state = makeState([{ id: 'p1', change: 'A', themeName: 'T' }]);
+    const payload = buildPlanFramePayload(state, { round: 1, pageName: 'Plan `dangerous` ${injection}' });
+    // pageName embeds inside a template literal — backticks and ${ MUST be escaped
+    expect(payload).toContain('\\`dangerous\\`');
+    expect(payload).toContain('\\${injection}');
+  });
+
+  it('emits row text safely via JSON encoding (no escape needed for backticks in JSON)', () => {
     const state = makeState([{ id: 'p1', change: 'Fix `code` and ${var}', themeName: 'T' }]);
     const payload = buildPlanFramePayload(state, { round: 1, pageName: 'P' });
-    expect(payload).not.toMatch(/`code`/);
-    expect(payload).toContain('\\`code\\`');
-    expect(payload).toContain('\\${var}');
+    // rows go through JSON.stringify, which produces a JS string literal — backticks/$ inside JSON-quoted string are inert
+    expect(payload).toContain('"text":"Fix `code` and ${var}"');
   });
 });
 

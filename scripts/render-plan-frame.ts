@@ -24,8 +24,8 @@ export function buildPlanFramePayload(state: State, opts: BuildOpts): string {
   const rows = round.plan.map((item, index) => ({
     id: item.id,
     index,
-    text: escapeForTemplate(item.change),
-    theme: escapeForTemplate(item.themeName),
+    text: item.change,
+    theme: item.themeName,
   }));
   const rowsJson = JSON.stringify(rows);
   return `
