@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Plan + Implement phases collapsed into Plan-Ack.** Plan approval and implementation tracking now happen on a rendered Figma plan frame. Resolve a comment thread to mark an item shipped; reply `/skip` to drop it.
+- State schema bumped from v1 → v2. Auto-migrates on first load. New plan statuses: `pending`, `shipped`, `wontdo`, `removed` (replacing `proposed`/`approved`/`rejected`/`dropped`).
+- Round phase count: 9 → 8. Gate count: 5 → 4.
+
+### Added
+- Figma REST helpers: `postComment`, `postReply`, `deleteComment`.
+- `figloops-next-plan-ack` skill (render + refresh modes).
+
+### Removed
+- `figloops-next-plan` and `figloops-next-implement` skills.
+
 ## v1.4.3 — 2026-06-09
 
 ### Polish
