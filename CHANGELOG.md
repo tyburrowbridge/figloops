@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.0 — 2026-06-09
+
+### Features
+- CLI progress bars during capture and route probing (TTY: live `[████░░] 3/8` bar; non-TTY: one line per completion)
+- Per-upload progress lines during push (`[push] ✓ filename`)
+
 ## v1.1.0 — 2026-06-09
 
 ### Performance

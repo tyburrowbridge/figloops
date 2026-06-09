@@ -89,12 +89,16 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
    b. Derive Content-Type from extension: `.png` → `image/png`; `.jpg`/`.jpeg` → `image/jpeg`; `.webp` → `image/webp`.
 
-   c. Fire all curls **in parallel** in one bash block:
+   c. Fire all curls **in parallel** in one bash block. Echo progress per completion so the user sees uploads finish live:
       ```bash
-      curl -s -X POST -H "Content-Type: <type1>" --data-binary @"<capturesDir>/<f1>" "<url1>" &
-      curl -s -X POST -H "Content-Type: <type2>" --data-binary @"<capturesDir>/<f2>" "<url2>" &
+      N=<count>
+      ( curl -s -X POST -H "Content-Type: <type1>" --data-binary @"<capturesDir>/<f1>" "<url1>" \
+        && echo "[push] ✓ <f1>" >&2 || echo "[push] ✗ <f1>" >&2 ) &
+      ( curl -s -X POST -H "Content-Type: <type2>" --data-binary @"<capturesDir>/<f2>" "<url2>" \
+        && echo "[push] ✓ <f2>" >&2 || echo "[push] ✗ <f2>" >&2 ) &
       # ... one per upload frame
       wait
+      echo "[push] all $N uploads complete" >&2
       ```
 
    d. After `wait`, POST any returned `commitUrl`s once each: `curl -s -X POST "<commitUrl>"`.

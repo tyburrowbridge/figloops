@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
+import { createProgress, type ProgressReporter } from '../src/progress.js';
 
 export interface CaptureRoute {
   label: string;
@@ -88,10 +89,12 @@ async function processItem(
   item: CaptureItem,
   index: number,
   skipLuminance: boolean,
+  progress: ProgressReporter | null,
 ): Promise<WorkerResult> {
   const url = new URL(item.path, args.baseUrl).toString();
   const filename = `${String(index + 1).padStart(2, '0')}-${slug(item.label)}.jpg`;
   const out = join(args.outputDir, filename);
+  const start = performance.now();
   const ctx = await browser.newContext({ viewport: args.viewport });
   try {
     const page = await ctx.newPage();
@@ -106,10 +109,11 @@ async function processItem(
     }
     const luminance = skipLuminance ? null : await sampleLuminance(page);
     await page.screenshot({ path: out, fullPage: true, type: 'jpeg', quality: 85 });
+    progress?.tick(item.label, true, performance.now() - start);
     return { kind: 'ok', index, label: item.label, filename, path: out, luminance };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`[capture] skipped ${item.label}: ${message}\n`);
+    progress?.tick(item.label, false, performance.now() - start, message);
     return { kind: 'err', index, label: item.label, error: message };
   } finally {
     await ctx.close();
@@ -131,6 +135,8 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
     const results = new Map<number, WorkerResult>();
     let next = 0;
 
+    const progress = items.length > 0 ? createProgress(items.length, 'capture') : null;
+
     const workers: Array<Promise<void>> = [];
     for (let w = 0; w < concurrency; w++) {
       workers.push(
@@ -138,13 +144,14 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
           while (true) {
             const i = next++;
             if (i >= items.length) return;
-            const res = await processItem(browser, args, items[i], i, skipLuminance);
+            const res = await processItem(browser, args, items[i], i, skipLuminance, progress);
             results.set(i, res);
           }
         })(),
       );
     }
     await Promise.all(workers);
+    progress?.done();
 
     const captures: CaptureResult['captures'] = [];
     const failed: CaptureResult['failed'] = [];
