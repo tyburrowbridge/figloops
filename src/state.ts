@@ -53,6 +53,7 @@ const pushManifestSchema = z.object({
 const commentSchema = z.object({
   id: z.string().min(1),
   frameLabel: z.string().nullable(),
+  nodeId: z.string().nullable().optional(),
   authorName: z.string(),
   authorHandle: z.string(),
   message: z.string(),

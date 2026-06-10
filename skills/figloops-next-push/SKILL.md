@@ -24,17 +24,21 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
    Note: embed only `label` and `filename` strings from `captures[]` — never image bytes.
 
-   Call MCP **once** to find/create the page in `<fileKey>` and create all frames in a single JS execution. Embed `captures`, `pageName`, `viewportWidth`, and `uiTheme` as literals.
+   Call MCP **once** to find/create the page in `<fileKey>` and create all frames in a single JS execution. Embed `captures`, `pageName`, `viewportWidth`, `pageBg`, and `labelClr` as literals.
+
+   **Resolve bg/label colors BEFORE building the JS** (do not branch inside the JS — agents sometimes substitute the wrong literal):
+   - Read `uiTheme` from `feedback/state.json`. If missing, default `'light'`.
+   - Intent: app theme and canvas bg are **opposite** for contrast.
+     - `uiTheme === 'light'` → `pageBg = { r: 30/255,  g: 30/255,  b: 30/255  }` (dark canvas `#1E1E1E`), `labelClr = { r: 1, g: 1, b: 1 }` (white text)
+     - `uiTheme === 'dark'`  → `pageBg = { r: 240/255, g: 240/255, b: 240/255 }` (light canvas `#F0F0F0`), `labelClr = { r: 51/255, g: 51/255, b: 51/255 }` (near-black text)
+   - Inline both as object literals in the JS below. Do NOT include the `uiTheme` variable or any ternary in the embedded script.
 
    ```js
    const captures = /* [{label, filename}] from state.json */;
    const pageName = '<Round N — timestamp>';
    const viewportWidth = <width>;
-   const uiTheme = 'light'; // substitute 'light'|'dark' from state.json
-
-   const isDark = uiTheme === 'dark';
-   const pageBg   = isDark ? { r: 240/255, g: 240/255, b: 240/255 } : { r: 30/255, g: 30/255, b: 30/255 };
-   const labelClr = isDark ? { r: 51/255,  g: 51/255,  b: 51/255  } : { r: 1, g: 1, b: 1 };
+   const pageBg   = /* resolved literal, e.g. { r: 30/255, g: 30/255, b: 30/255 } */;
+   const labelClr = /* resolved literal, e.g. { r: 1, g: 1, b: 1 } */;
 
    function pathToTitle(filename) {
      const stem = filename.replace(/\.(png|jpe?g|webp)$/i, '').replace(/^\d+-/, '');
@@ -50,7 +54,9 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      else { page = figma.createPage(); page.name = pageName; }
    }
    await figma.setCurrentPageAsync(page);
+   // Always overwrite — Figma's default page bg is ~#F0F0F0; reused pages may keep stale bg.
    page.backgrounds = [{ type: 'SOLID', color: pageBg, opacity: 1, visible: true, blendMode: 'NORMAL' }];
+   const appliedBg = page.backgrounds[0].color; // include in return for verification
 
    await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
 
@@ -79,10 +85,10 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      currentY += FRAME_HEIGHT + GAP_Y;
    }
 
-   return JSON.stringify({ pageId: page.id, frames });
+   return JSON.stringify({ pageId: page.id, appliedBg, frames });
    ```
 
-   Capture `pageId` and `frames` from the return value.
+   Capture `pageId`, `appliedBg`, and `frames` from the return value. Verify `appliedBg` matches the `pageBg` you embedded (component-wise within 1/255). If it doesn't, abort and surface the mismatch — do not proceed to uploads.
 
 5. **Upload images (parallel)** — partition `frames` into `reuse` (hash matches prior round's frame with same label) and `upload`.
 
