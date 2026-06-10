@@ -22,6 +22,7 @@ COMMANDS
   :summary   One-table rollup of all rounds to date
   :restart   Restart the current round or discard all rounds
   :init      One-time project setup
+  :uninstall Remove all local figloops files (Figma file untouched)
   :whatsnew  Show release notes + check for available upgrade
   :help      This screen
 ````
@@ -61,6 +62,7 @@ COMMANDS
   :feedback  Show all user feedback to date
   :themes    Show all clustered themes to date
   :summary   One-table rollup of all rounds to date
+  :uninstall Remove all local figloops files (Figma file untouched)
   :whatsnew  Show release notes + check for available upgrade
   :help      This screen
 

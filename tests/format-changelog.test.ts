@@ -16,9 +16,9 @@ const sampleRound: RoundData = {
   ],
   plan: [
     { id: 'p1', themeName: 'Navigation clarity', change: 'Add breadcrumbs', drivesFrom: ['12', '17'], status: 'shipped' },
-    { id: 'p2', themeName: 'Navigation clarity', change: 'Highlight nav', drivesFrom: ['12'], status: 'approved' },
+    { id: 'p2', themeName: 'Navigation clarity', change: 'Highlight nav', drivesFrom: ['12'], status: 'pending' },
     { id: 'p3', themeName: 'Color contrast', change: 'Increase contrast', drivesFrom: ['23'], status: 'shipped' },
-    { id: 'p4', themeName: 'Color contrast', change: 'Rejected idea', drivesFrom: ['23'], status: 'rejected' },
+    { id: 'p4', themeName: 'Color contrast', change: 'Rejected idea', drivesFrom: ['23'], status: 'wontdo' },
   ],
 };
 
@@ -38,14 +38,14 @@ describe('formatChangelog', () => {
     expect(md).toMatch(/Mike Chen \(#17\)/);
   });
 
-  it('omits non-shipped items (approved/rejected/proposed/dropped)', () => {
+  it('omits non-shipped items (pending/wontdo/removed)', () => {
     const md = formatChangelog({ fromRound: 2, toRound: 3, date: '2026-05-20', round: sampleRound });
     expect(md).not.toContain('Highlight nav');
     expect(md).not.toContain('Rejected idea');
   });
 
   it('returns the "feedback not actionable" stub when no items shipped', () => {
-    const empty: RoundData = { ...sampleRound, plan: sampleRound.plan.map((p) => ({ ...p, status: 'rejected' })) };
+    const empty: RoundData = { ...sampleRound, plan: sampleRound.plan.map((p) => ({ ...p, status: 'wontdo' })) };
     const md = formatChangelog({ fromRound: 2, toRound: 3, date: '2026-05-20', round: empty });
     expect(md).toContain('feedback not actionable');
   });

@@ -63,10 +63,12 @@ header: "Existing round"
 options:
   - label: "Resume — exit init, just run /figloops:next"
   - label: "Archive — rename state.json to a backup and start fresh"
+  - label: "Purge — delete all figloops files and start fresh"
   - label: "Cancel — don't change anything"
 ```
 - Resume: read `currentRound` and `currentPhase` from the file. Print `"Round <N> phase <phase> is in progress. Run /figloops:next to continue."` Abort.
 - Archive: rename to `feedback/state.<YYYYMMDD-HHMMSS>.json.bak` (use `date '+%Y%m%d-%H%M%S'`). Tell user the backup path. Continue.
+- Purge: run `"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/uninstall.ts"`. Relay stdout. This hard-deletes `feedback/`, `figloops.config.json`, all `figloops.config.*.json.bak`, and strips `FIGMA_TOKEN`/`FIGLOOPS_PLUGIN_DIR` from `.env` (deletes `.env` if empty after). Figma file untouched. Then continue with this wizard from Step 3 — skip Step 2b entirely (config is gone).
 - Cancel: print `"Cancelled. Existing round preserved."` Abort.
 
 **2b. `figloops.config.json`** — if present, try to validate with an existing token. Check `process.env.FIGMA_TOKEN` then `.env` file for a `FIGMA_TOKEN=` line.
@@ -410,15 +412,14 @@ Mark `[FIGLOOPS] Initialize figloops` as `completed`.
 
 ### Step 11 — Create round tracker
 
-Call `TaskCreate` 9 times in a single message (all `pending`):
+Call `TaskCreate` 8 times in a single message (all `pending`):
 - `[FIGLOOPS] Capture screenshots`
 - `[FIGLOOPS] Push to Figma`
 - `[FIGLOOPS] Wait for user comments`
 - `[FIGLOOPS] Pull comments`
 - `[FIGLOOPS] Review comments`
 - `[FIGLOOPS] Cluster themes`
-- `[FIGLOOPS] Approve plan`
-- `[FIGLOOPS] Implement changes`
+- `[FIGLOOPS] Ack plan in Figma`
 - `[FIGLOOPS] Close round`
 
 ### Step 12 — Ready summary

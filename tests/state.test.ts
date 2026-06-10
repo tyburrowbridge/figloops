@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { loadState, writeState, initState, ensureRound, State } from '../src/state.js';
@@ -19,7 +19,7 @@ describe('initState', () => {
     const path = join(dir, 'state.json');
     initState(path);
     const s = JSON.parse(readFileSync(path, 'utf8'));
-    expect(s.schemaVersion).toBe(1);
+    expect(s.schemaVersion).toBe(2);
     expect(s.currentRound).toBe(1);
     expect(s.currentPhase).toBe('capture');
     expect(s.rounds['1']).toEqual({
@@ -51,7 +51,7 @@ describe('loadState', () => {
 
   it('throws a clear error with field paths if shape is wrong', () => {
     const path = join(dir, 'state.json');
-    writeFileSync(path, JSON.stringify({ schemaVersion: 1, currentRound: 'not-a-number', currentPhase: 'capture', rounds: {} }));
+    writeFileSync(path, JSON.stringify({ schemaVersion: 2, currentRound: 'not-a-number', currentPhase: 'capture', rounds: {} }));
     expect(() => loadState(path)).toThrow(/currentRound/);
   });
 
@@ -119,7 +119,7 @@ describe('Phase enum', () => {
   it('rejects unknown phases', () => {
     const path = join(dir, 'state.json');
     writeFileSync(path, JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       currentRound: 1,
       currentPhase: 'bogus',
       rounds: { '1': { captures: [], pushManifest: null, comments: [], themes: [], plan: [] } },
@@ -152,7 +152,7 @@ describe('round.git', () => {
   it('rejects a git block with empty branch name', () => {
     const path = join(dir, 'state.json');
     writeFileSync(path, JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       currentRound: 1,
       currentPhase: 'capture',
       rounds: {
@@ -163,5 +163,29 @@ describe('round.git', () => {
       },
     }));
     expect(() => loadState(path)).toThrow(/branch/);
+  });
+});
+
+describe('loadState v1 → v2 auto-migration', () => {
+  it('migrates and persists a v1 file on first read', () => {
+    const tmp = `/tmp/figloops-state-${Date.now()}.json`;
+    writeFileSync(tmp, JSON.stringify({
+      schemaVersion: 1,
+      currentRound: 1,
+      currentPhase: 'plan-approval',
+      rounds: {
+        '1': {
+          captures: [], pushManifest: null, comments: [], themes: [],
+          plan: [{ id: 'p1', themeName: 'T', change: 'C', drivesFrom: [], status: 'approved' }],
+        },
+      },
+    }));
+    const state = loadState(tmp);
+    expect(state.schemaVersion).toBe(2);
+    expect(state.currentPhase).toBe('plan-ack');
+    expect(state.rounds['1'].plan[0].status).toBe('pending');
+    const persisted = JSON.parse(readFileSync(tmp, 'utf8'));
+    expect(persisted.schemaVersion).toBe(2);
+    unlinkSync(tmp);
   });
 });

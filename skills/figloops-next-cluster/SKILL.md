@@ -23,14 +23,14 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    - `themeName`: matches one of the themes
    - `change`: a concrete proposed change (specific and actionable)
    - `drivesFrom`: array of comment IDs from state
-   - `status`: `"proposed"`
+   - `status`: `"pending"`
 
 4. Write themes and plan:
    ```bash
    echo '<THEMES_JSON>' | "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/set-themes.ts"
    echo '{"action":"set","items":[...]}' | "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/update-plan.ts"
    ```
-   `THEMES_JSON` = array of `{ name, commentIds, summary }`. Plan items array = `{ id, themeName, change, drivesFrom, status: "proposed" }`.
+   `THEMES_JSON` = array of `{ name, commentIds, summary }`. Plan items array = `{ id, themeName, change, drivesFrom, status: "pending" }`.
 
 5. Regenerate snapshot:
    ```bash
@@ -39,6 +39,6 @@ TS exits non-zero → relay stderr verbatim, don't advance.
 
 6. Mark task `[FIGLOOPS] Cluster themes` as `completed`. Run:
    ```bash
-   "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" plan-approval
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" plan-ack
    ```
-   Invoke skill `figloops-next-plan`.
+   Invoke skill `figloops-next-plan-ack`.

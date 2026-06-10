@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.5.0 — 2026-06-10
+
+### Changed
+- **Plan + Implement phases collapsed into Plan-Ack.** Plan approval and implementation tracking now happen on a rendered Figma plan frame. Resolve a comment thread to mark an item shipped; reply `/skip` to drop it.
+- State schema bumped from v1 → v2. Auto-migrates on first load. New plan statuses: `pending`, `shipped`, `wontdo`, `removed` (replacing `proposed`/`approved`/`rejected`/`dropped`).
+- Round phase count: 9 → 8. Gate count: 5 → 4.
+
+### Added
+- Figma REST helpers: `postComment`, `postReply`, `deleteComment`.
+- `figloops-next-plan-ack` skill (render + refresh modes).
+- `/figloops:uninstall` command + `figloops-uninstall` skill + `scripts/uninstall.ts`. Hard-deletes `feedback/`, `figloops.config.json`, all `figloops.config.*.json.bak`, and strips `FIGMA_TOKEN`/`FIGLOOPS_PLUGIN_DIR` from `.env` (deletes `.env` if empty after). Figma file, pages, and comments left untouched. `--dry-run` flag supported.
+- `/figloops:init` Step 2a: new **Purge** option on existing-state prompt; invokes the uninstall script then continues init from Step 3.
+
+### Removed
+- `figloops-next-plan` and `figloops-next-implement` skills.
+
 ## v1.4.6 — 2026-06-09
 
 ### Features

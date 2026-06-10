@@ -61,6 +61,11 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error + partial 
 
    Capture `pageId` and `frameId` from the return value.
 
+6. Clean up bot reply comments anchored on the plan frame (best-effort; tolerates 404):
+   ```bash
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/cleanup-bot-replies.ts" "feedback/state.json" <round> "<fileKey>" "$FIGMA_TOKEN" || echo "Bot reply cleanup failed — non-fatal, continuing."
+   ```
+
 8. Regenerate snapshot:
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/render-snapshot.ts"
@@ -71,15 +76,14 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error + partial 
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" capture
    ```
 
-10. Re-create 9 round tracker tasks for the new round (call `TaskCreate` 9 times in a single message, all `pending`):
+10. Re-create 8 round tracker tasks for the new round (call `TaskCreate` 8 times in a single message, all `pending`):
     - `[FIGLOOPS] Capture screenshots`
     - `[FIGLOOPS] Push to Figma`
     - `[FIGLOOPS] Wait for user comments`
     - `[FIGLOOPS] Pull comments`
     - `[FIGLOOPS] Review comments`
     - `[FIGLOOPS] Cluster themes`
-    - `[FIGLOOPS] Approve plan`
-    - `[FIGLOOPS] Implement changes`
+    - `[FIGLOOPS] Ack plan in Figma`
     - `[FIGLOOPS] Close round`
 
 11. Print as the final output (after all tool calls, so it lands below the task list):

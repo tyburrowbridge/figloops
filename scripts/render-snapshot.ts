@@ -99,8 +99,9 @@ function renderPlan(round: RoundData): string {
   for (const [themeName, items] of byTheme) {
     lines.push(`### ${themeName}`);
     for (const item of items) {
-      const check = item.status === 'shipped' ? '[✓]' : '[ ]';
-      lines.push(`- ${check} ${item.change}`);
+      const check = item.status === 'shipped' ? '[✓]' : item.status === 'wontdo' ? '[✗]' : item.status === 'removed' ? '[—]' : '[ ]';
+      const thread = item.commentId ? ` · thread:${item.commentId}` : '';
+      lines.push(`- ${check} ${item.change}${thread}`);
       lines.push(`      Drives from: ${citeMany(round.comments, item.drivesFrom)}`);
     }
     lines.push('');
@@ -111,9 +112,9 @@ function renderPlan(round: RoundData): string {
 function planSummary(round: RoundData): string {
   const total = round.plan.length;
   if (total === 0) return '';
-  const approved = round.plan.filter((p) => p.status === 'approved' || p.status === 'shipped').length;
+  const pending = round.plan.filter((p) => p.status === 'pending').length;
   const shipped = round.plan.filter((p) => p.status === 'shipped').length;
-  return ` (${approved} approved · ${shipped} shipped · ${approved - shipped} pending)`;
+  return ` (${pending} pending · ${shipped} shipped)`;
 }
 
 export function renderSnapshot(state: State, round: number): string {

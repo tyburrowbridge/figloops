@@ -2,149 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { uploadImage, fetchComments, filterCommentsByFrameIds, getMe, getFile } from '../src/figma-client.js';
+import { fetchComments, filterCommentsByFrameIds, getMe, getFile, postComment, postReply, deleteComment } from '../src/figma-client.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readFixture = (name: string) =>
   JSON.parse(readFileSync(join(here, 'fixtures', name), 'utf8'));
-
-describe('uploadImage', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('POSTs to the correct URL with token header', async () => {
-    (fetch as any).mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ meta: { images: { 'login.png': 'hash-abc' } } }),
-    });
-
-    await uploadImage({
-      fileKey: 'abc123',
-      token: 'tok',
-      filename: 'login.png',
-      bytes: Buffer.from([0x89, 0x50]),
-    });
-
-    expect(fetch).toHaveBeenCalledTimes(1);
-    const [url, init] = (fetch as any).mock.calls[0];
-    expect(url).toBe('https://api.figma.com/v1/images/abc123');
-    expect(init.method).toBe('POST');
-    expect(init.headers['X-Figma-Token']).toBe('tok');
-  });
-
-  it('returns the image hash on success', async () => {
-    (fetch as any).mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ meta: { images: { 'login.png': 'hash-abc' } } }),
-    });
-
-    const hash = await uploadImage({
-      fileKey: 'abc123',
-      token: 'tok',
-      filename: 'login.png',
-      bytes: Buffer.from([0x89]),
-    });
-
-    expect(hash).toBe('hash-abc');
-  });
-
-  it('throws an actionable auth/access error on 401/403/404 with the fileKey called out', async () => {
-    for (const status of [401, 403, 404] as const) {
-      (fetch as any).mockResolvedValue({
-        ok: false,
-        status,
-        text: async () => 'denied',
-      });
-
-      await expect(
-        uploadImage({
-          fileKey: 'abc123',
-          token: 'bad',
-          filename: 'x.png',
-          bytes: Buffer.from([0]),
-        }),
-      ).rejects.toThrowError(
-        new RegExp(`Figma rejected the upload \\(${status}\\).*abc123.*FIGMA_TOKEN`, 's'),
-      );
-    }
-  });
-
-  it('throws with status and body on other 4xx', async () => {
-    (fetch as any).mockResolvedValue({
-      ok: false,
-      status: 422,
-      text: async () => 'malformed',
-    });
-
-    await expect(
-      uploadImage({
-        fileKey: 'abc123',
-        token: 'tok',
-        filename: 'x.png',
-        bytes: Buffer.from([0]),
-      }),
-    ).rejects.toThrowError(/422.*malformed/);
-  });
-
-  it('retries on 5xx and succeeds if a later attempt works', async () => {
-    let calls = 0;
-    (fetch as any).mockImplementation(() => {
-      calls++;
-      if (calls < 3) {
-        return Promise.resolve({
-          ok: false,
-          status: 503,
-          text: async () => 'Service Unavailable',
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({ meta: { images: { 'login.png': 'hash-retry' } } }),
-      });
-    });
-
-    const hash = await uploadImage({
-      fileKey: 'abc123',
-      token: 'tok',
-      filename: 'login.png',
-      bytes: Buffer.from([0x89]),
-    });
-
-    expect(hash).toBe('hash-retry');
-    expect(calls).toBe(3);
-  }, 10_000);
-
-  it('does NOT retry on 4xx (other than 429)', async () => {
-    let calls = 0;
-    (fetch as any).mockImplementation(() => {
-      calls++;
-      return Promise.resolve({
-        ok: false,
-        status: 403,
-        text: async () => 'Forbidden',
-      });
-    });
-
-    await expect(
-      uploadImage({
-        fileKey: 'abc123',
-        token: 'bad',
-        filename: 'x.png',
-        bytes: Buffer.from([0]),
-      }),
-    ).rejects.toThrowError(/Figma rejected the upload \(403\).*abc123/s);
-
-    expect(calls).toBe(1);
-  });
-});
 
 describe('fetchComments', () => {
   beforeEach(() => {
@@ -205,10 +67,10 @@ describe('fetchComments', () => {
 
 describe('filterCommentsByFrameIds', () => {
   const sample: any[] = [
-    { id: '1', nodeId: '1:42', message: 'a', authorName: 'A', authorHandle: 'A', createdAt: 't1', resolved: false },
-    { id: '2', nodeId: '1:43', message: 'b', authorName: 'B', authorHandle: 'B', createdAt: 't2', resolved: false },
-    { id: '3', nodeId: '9:99', message: 'c', authorName: 'C', authorHandle: 'C', createdAt: 't3', resolved: false },
-    { id: '4', nodeId: null,   message: 'd', authorName: 'D', authorHandle: 'D', createdAt: 't4', resolved: false },
+    { id: '1', nodeId: '1:42', message: 'a', authorName: 'A', authorHandle: 'A', createdAt: 't1', resolved: false, parentId: null, replies: [] },
+    { id: '2', nodeId: '1:43', message: 'b', authorName: 'B', authorHandle: 'B', createdAt: 't2', resolved: false, parentId: null, replies: [] },
+    { id: '3', nodeId: '9:99', message: 'c', authorName: 'C', authorHandle: 'C', createdAt: 't3', resolved: false, parentId: null, replies: [] },
+    { id: '4', nodeId: null,   message: 'd', authorName: 'D', authorHandle: 'D', createdAt: 't4', resolved: false, parentId: null, replies: [] },
   ];
 
   it('returns only comments whose nodeId is in the allow set', () => {
@@ -288,5 +150,77 @@ describe('getFile', () => {
       text: async () => 'Not Found',
     });
     await expect(getFile({ fileKey: 'nope', token: 'figd_x' })).rejects.toThrow(/404|not found/i);
+  });
+});
+
+describe('fetchComments — replies + parent_id', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('exposes parent_id and orders replies under each thread', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200, json: async () => readFixture('comments-with-replies.json') });
+    const comments = await fetchComments({ fileKey: 'k', token: 't' });
+    const c1 = comments.find(c => c.id === 'c1')!;
+    expect(c1.parentId).toBe(null);
+    expect(c1.replies.map(r => r.id)).toEqual(['c1-r1', 'c1-r2']);
+    expect(c1.replies[1].message).toBe('/skip');
+  });
+
+  it('marks resolved threads via resolved_at', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200, json: async () => readFixture('comments-with-replies.json') });
+    const comments = await fetchComments({ fileKey: 'k', token: 't' });
+    const c2 = comments.find(c => c.id === 'c2')!;
+    expect(c2.resolved).toBe(true);
+  });
+});
+
+describe('postComment', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('POSTs to /v1/files/:key/comments with message and client_meta', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'new-id' }) });
+    const id = await postComment({ fileKey: 'k', token: 't', message: 'hi', clientMeta: { node_id: '0:1', node_offset: { x: 10, y: 20 } } });
+    expect(id).toBe('new-id');
+    const [url, init] = (fetch as any).mock.calls[0];
+    expect(url).toBe('https://api.figma.com/v1/files/k/comments');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ message: 'hi', client_meta: { node_id: '0:1', node_offset: { x: 10, y: 20 } } });
+  });
+});
+
+describe('postReply', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('POSTs with comment_id pointing to parent', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'reply-id' }) });
+    const id = await postReply({ fileKey: 'k', token: 't', parentId: 'c1', message: '🤖 hello' });
+    expect(id).toBe('reply-id');
+    const [, init] = (fetch as any).mock.calls[0];
+    expect(JSON.parse(init.body)).toEqual({ message: '🤖 hello', comment_id: 'c1' });
+  });
+});
+
+describe('deleteComment', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('DELETEs /v1/files/:key/comments/:id', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200 });
+    await deleteComment({ fileKey: 'k', token: 't', commentId: 'c1' });
+    const [url, init] = (fetch as any).mock.calls[0];
+    expect(url).toBe('https://api.figma.com/v1/files/k/comments/c1');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('tolerates 404 (already deleted)', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 404, text: async () => 'not found' });
+    await expect(deleteComment({ fileKey: 'k', token: 't', commentId: 'gone' })).resolves.toBeUndefined();
+  });
+
+  it('throws on other non-OK statuses', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 500, text: async () => 'server err' });
+    await expect(deleteComment({ fileKey: 'k', token: 't', commentId: 'c1' })).rejects.toThrow(/500/);
   });
 });

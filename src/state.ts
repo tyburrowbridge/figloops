@@ -1,11 +1,14 @@
 // Zod schema + reader/writer for feedback/state.json — the source of truth
 // for figloops. Replaces the old src/round-state.ts (currentRound only).
 //
-// Shape is the v1 schema documented in
+// v2 schema. Original v1 documented in
 // docs/superpowers/specs/2026-05-20-figloops-v1-design.md (section "State model").
+// v2 changes in docs/superpowers/specs/2026-06-09-figloops-plan-ack-refactor-design.md.
+// Legacy v1 files auto-migrate on load via migrateV1ToV2.
 import { z } from 'zod';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { migrateV1ToV2 } from './migrations/v1-to-v2.js';
 
 const uiThemeSchema = z.enum(['light', 'dark']);
 export type UiTheme = z.infer<typeof uiThemeSchema>;
@@ -17,18 +20,16 @@ export const phaseSchema = z.enum([
   'pull',
   'comment-review',
   'cluster',
-  'plan-approval',
-  'implement',
+  'plan-ack',
   'close',
 ]);
 export type Phase = z.infer<typeof phaseSchema>;
 
 export const planStatusSchema = z.enum([
-  'proposed',
-  'approved',
-  'rejected',
+  'pending',
   'shipped',
-  'dropped',
+  'wontdo',
+  'removed',
 ]);
 export type PlanStatus = z.infer<typeof planStatusSchema>;
 
@@ -72,6 +73,15 @@ const planItemSchema = z.object({
   change: z.string().min(1),
   drivesFrom: z.array(z.string()),
   status: planStatusSchema,
+  commentId: z.string().min(1).optional(),
+  botReplyId: z.string().min(1).optional(),
+  rowIndex: z.number().int().nonnegative().optional(),
+});
+
+const planFrameSchema = z.object({
+  pageId: z.string().min(1),
+  frameId: z.string().min(1),
+  frameName: z.string().min(1),
 });
 
 const roundGitSchema = z.object({
@@ -86,11 +96,12 @@ const roundDataSchema = z.object({
   comments: z.array(commentSchema),
   themes: z.array(themeSchema),
   plan: z.array(planItemSchema),
+  planFrame: planFrameSchema.optional(),
   git: roundGitSchema.optional(),
 });
 
 export const stateSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   currentRound: z.number().int().positive(),
   currentPhase: phaseSchema,
   uiTheme: uiThemeSchema.optional(),
@@ -117,7 +128,7 @@ export function initState(path: string): void {
   // Ensure the parent directory exists so callers don't have to mkdir first.
   mkdirSync(dirname(path), { recursive: true });
   const state: State = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     currentRound: 1,
     currentPhase: 'capture',
     rounds: { '1': emptyRound() },
@@ -135,6 +146,11 @@ export function loadState(path: string): State {
     data = JSON.parse(raw);
   } catch (err) {
     throw new Error(`Invalid JSON in state at ${path}: ${(err as Error).message}`);
+  }
+  // Auto-migrate v1 → v2
+  if ((data as any)?.schemaVersion === 1) {
+    data = migrateV1ToV2(data);
+    writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
   }
   const result = stateSchema.safeParse(data);
   if (!result.success) {

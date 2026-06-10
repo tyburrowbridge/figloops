@@ -1,0 +1,8 @@
+{
+  "comments": [
+    { "id": "c1", "message": "Item #1: Add breadcrumbs to Dashboard", "client_meta": { "node_id": "0:1" }, "user": { "handle": "bot", "id": "bot-id" }, "created_at": "2026-06-09T10:00:00Z", "resolved_at": null, "parent_id": "" },
+    { "id": "c1-r1", "message": "🤖 Resolve thread (✓) = shipped · Reply `/skip` = won't do", "user": { "handle": "bot", "id": "bot-id" }, "created_at": "2026-06-09T10:00:01Z", "resolved_at": null, "parent_id": "c1" },
+    { "id": "c1-r2", "message": "/skip", "user": { "handle": "designer", "id": "des-id" }, "created_at": "2026-06-09T11:00:00Z", "resolved_at": null, "parent_id": "c1" },
+    { "id": "c2", "message": "Item #2: Increase contrast", "client_meta": { "x": 0, "y": 200 }, "user": { "handle": "bot", "id": "bot-id" }, "created_at": "2026-06-09T10:00:00Z", "resolved_at": "2026-06-09T12:00:00Z", "parent_id": "" }
+  ]
+}
