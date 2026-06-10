@@ -78,6 +78,7 @@ You'll mostly only use `:next`.
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
 | `/figloops:summary` | One-table rollup of every round (status, phase, counts, completion date). |
 | `/figloops:restart` | Restart the current round or discard all rounds and start fresh. |
+| `/figloops:uninstall` | Remove all local figloops files (state, config, `.env` keys). Figma file untouched. |
 | `/figloops:whatsnew` | Release notes + check if a newer version is available on GitHub. |
 | `/figloops:help` | Lists commands and shows where you are. |
 
@@ -120,6 +121,32 @@ Upgrades go through Claude Code's plugin manager:
 ```
 
 After upgrading, run `/figloops:whatsnew` to see what changed and confirm you're on the latest release.
+
+---
+
+## Uninstall
+
+Wipe all local figloops files (state, config, `.env` keys). Your Figma file, pages, and comments are left alone.
+
+```
+/figloops:uninstall
+```
+
+Then remove the plugin itself from Claude Code:
+
+```
+/plugin uninstall figloops@figloops
+/plugin marketplace remove figloops
+```
+
+**Manual fallback** (if the command is unavailable):
+
+```bash
+rm -rf feedback figloops.config.json figloops.config.*.json.bak
+# then edit .env to remove the FIGMA_TOKEN and FIGLOOPS_PLUGIN_DIR lines
+```
+
+To start fresh without uninstalling, re-run `/figloops:init` — it offers a **Purge** option when existing state is detected.
 
 ---
 
