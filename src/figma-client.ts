@@ -1,5 +1,54 @@
 const FIGMA_API_BASE = 'https://api.figma.com';
 
+export interface UploadImageArgs {
+  fileKey: string;
+  token: string;
+  filename: string;
+  bytes: Uint8Array | Buffer;
+}
+
+export async function uploadImage(args: UploadImageArgs): Promise<string> {
+  const url = `${FIGMA_API_BASE}/v1/images/${args.fileKey}`;
+  const headers: Record<string, string> = {
+    'X-Figma-Token': args.token,
+    'Content-Type': 'application/octet-stream',
+  };
+
+  const AUTH_STATUSES = new Set([401, 403, 404]);
+  const MAX_ATTEMPTS = 3;
+  let attempt = 0;
+
+  while (true) {
+    const res = await fetch(url, { method: 'POST', headers, body: args.bytes });
+
+    if (res.ok) {
+      const data = (await res.json()) as { meta: { images: Record<string, string> } };
+      return data.meta.images[args.filename];
+    }
+
+    if (AUTH_STATUSES.has(res.status)) {
+      const body = await res.text();
+      throw new Error(
+        `Figma rejected the upload (${res.status}) for file ${args.fileKey}. ` +
+        `Check FIGMA_TOKEN has edit access. Body: ${body}`,
+      );
+    }
+
+    if (res.status >= 500 || res.status === 429) {
+      attempt++;
+      if (attempt >= MAX_ATTEMPTS) {
+        const body = await res.text();
+        throw new Error(`Figma upload failed (${res.status}) after ${MAX_ATTEMPTS} attempts: ${body}`);
+      }
+      await new Promise((r) => setTimeout(r, 100 * attempt));
+      continue;
+    }
+
+    const body = await res.text();
+    throw new Error(`Figma upload failed (${res.status}): ${body}`);
+  }
+}
+
 export interface FigmaComment {
   id: string;
   message: string;
