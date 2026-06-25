@@ -1,5 +1,5 @@
 ---
-name: figloops-next-pull
+name: figloops-go-pull
 description: Pull phase — fetch Figma comments and advance
 user-invocable: false
 ---
@@ -27,4 +27,4 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" comment-review
    ```
-   Invoke skill `figloops-next-review`.
+   Invoke skill `figloops-go-review`.

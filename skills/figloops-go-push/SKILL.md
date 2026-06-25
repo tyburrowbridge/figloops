@@ -1,5 +1,5 @@
 ---
-name: figloops-next-push
+name: figloops-go-push
 description: Push phase — upload images and create Figma frames
 user-invocable: false
 ---
@@ -16,11 +16,11 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
 1. Mark `[FIGLOOPS] Push to Figma` as `in_progress`.
 
-2. Read `figloops.config.json` for `figma.fileKey` and `viewport.width`. Read `feedback/state.json` for `currentRound`, `uiTheme` (default `'light'`), and current round's `captures` (`[{ label, filename }]`). Resolve captures dir: `feedback/round-<currentRound>/captures/`. If missing or contains no `.png`, `.jpg`, or `.jpeg` files, abort: `✗ No captures found — run /figloops:next from the capture phase first.`
+2. Read `figloops.config.json` for `figma.fileKey` and `viewport.width`. Read `feedback/state.json` for `currentRound`, `uiTheme` (default `'light'`), and current round's `captures` (`[{ label, filename }]`). Resolve captures dir: `feedback/round-<currentRound>/captures/`. If missing or contains no `.png`, `.jpg`, or `.jpeg` files, abort: `✗ No captures found — run /figloops:go from the capture phase first.`
 
-3. Timestamp: `date '+%-d %B %Y (%-I:%M %p)'`. Page name: `Round <round> — <timestamp>` (em dash).
+3. Timestamp: `"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/timestamp.ts" page` (e.g. `24 June 2026 (3:45 PM)`). Page name: `Round <round> — <timestamp>` (em dash).
 
-4. Compute SHA-256 for each capture: `shasum -a 256 "<capturesDir>/<filename>" | cut -d' ' -f1`. Read prior round's manifest from `feedback/state.json` at `rounds[<currentRound-1>].pushManifest.frames[]` if exists; build a `{label → imageHash}` map for reuse.
+4. Compute SHA-256 for every capture in one call: `"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/hash-captures.ts" "<capturesDir>"` → returns `{ "<filename>": "<sha256>", … }`. Read prior round's manifest from `feedback/state.json` at `rounds[<currentRound-1>].pushManifest.frames[]` if exists; build a `{label → imageHash}` map for reuse.
 
    Note: embed only `label` and `filename` strings from `captures[]` — never image bytes.
 
@@ -60,7 +60,7 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
    await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
 
-   const GAP_Y = 80, LABEL_HEIGHT = 50, FRAME_HEIGHT = 900;
+   const GAP_Y = 80, LABEL_HEIGHT = 50, LABEL_GAP = 32, FRAME_HEIGHT = 900;
    let currentY = 0;
    const frames = [];
 
@@ -73,7 +73,8 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
      labelNode.x = 0;
      labelNode.y = currentY;
      page.appendChild(labelNode);
-     currentY += LABEL_HEIGHT;
+     // Clear Figma's frame-name strip (renders just above the frame top).
+     currentY += LABEL_HEIGHT + LABEL_GAP;
 
      const frame = figma.createFrame();
      frame.name = capture.label;
@@ -94,25 +95,14 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
 
    a. For each `upload` frame, call MCP `upload_assets` with `count=1`, `nodeId=<frameId>`, `fileKey=<fileKey>`. Collect `{frameId, filename, uploadUrl, commitUrl?}` pairs. (One MCP call per frame is required because `nodeId` only works with `count=1`.)
 
-   b. Derive Content-Type from extension: `.png` → `image/png`; `.jpg`/`.jpeg` → `image/jpeg`; `.webp` → `image/webp`.
-
-   c. Fire all curls **in parallel** in one bash block. Echo progress per completion so the user sees uploads finish live:
+   b. Upload all bytes and commit in one call — build a JSON array and pipe it to `upload-to-urls.ts` (uploads run with bounded concurrency; commit URLs POST after; per-file progress prints to stderr live). Content-Type is derived from each file's extension by the script:
       ```bash
-      N=<count>
-      ( curl -s -X POST -H "Content-Type: <type1>" --data-binary @"<capturesDir>/<f1>" "<url1>" \
-        && echo "[push] ✓ <f1>" >&2 || echo "[push] ✗ <f1>" >&2 ) &
-      ( curl -s -X POST -H "Content-Type: <type2>" --data-binary @"<capturesDir>/<f2>" "<url2>" \
-        && echo "[push] ✓ <f2>" >&2 || echo "[push] ✗ <f2>" >&2 ) &
-      # ... one per upload frame
-      wait
-      echo "[push] all $N uploads complete" >&2
+      echo '[{"file":"<capturesDir>/<f1>","uploadUrl":"<url1>","commitUrl":"<commitUrl1>"}, …]' \
+        | "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/upload-to-urls.ts"
       ```
+      Omit `commitUrl` for items that didn't return one. The script returns `{ uploaded, failed, commitFailed }`. Surface any `failed` entries verbatim and continue — do not abort. A non-empty `commitFailed` exits non-zero (an uploaded blob never finalized → blank frame): relay it verbatim and stop; do not advance the phase.
 
-   d. After `wait`, POST any returned `commitUrl`s once each: `curl -s -X POST "<commitUrl>"`.
-
-   e. For `reuse` frames, make ONE `use_figma` call that loops them and sets `fills` on each `frameId` to `[{ type: 'IMAGE', scaleMode: 'FILL', imageHash: '<prior hash>' }]`.
-
-   On any upload failure, surface the error verbatim and continue with remaining frames — do not abort.
+   d. For `reuse` frames, make ONE `use_figma` call that loops them and sets `fills` on each `frameId` to `[{ type: 'IMAGE', scaleMode: 'FILL', imageHash: '<prior hash>' }]`.
 
 6. Persist manifest:
    ```bash
@@ -128,4 +118,4 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error, note part
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" await-comments
    ```
-   Invoke skill `figloops-next-await`.
+   Invoke skill `figloops-go-await`.

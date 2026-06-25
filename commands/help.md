@@ -20,6 +20,7 @@ COMMANDS
   :feedback  Show all user feedback to date (grouped by round)
   :themes    Show all clustered themes to date (grouped by round)
   :summary   One-table rollup of all rounds to date
+  :discover  Auto-detect modal/panel/menu/tab scenarios
   :restart   Restart the current round or discard all rounds
   :init      One-time project setup
   :uninstall Remove all local figloops files (Figma file untouched)
@@ -28,15 +29,14 @@ COMMANDS
 ````
 
 Phase → next-action phrase:
-- `capture` → "Run /figloops:next to capture screenshots"
-- `push` → "Run /figloops:next to push captures to Figma"
-- `await-comments` → "Run /figloops:next when users respond"
-- `pull` → "Run /figloops:next to fetch comments"
-- `comment-review` → "Run /figloops:next to advance after reviewing comments"
-- `cluster` → "Run /figloops:next to cluster comments by theme"
-- `plan-approval` → "Run /figloops:next to review and approve the plan"
-- `implement` → "Run /figloops:next to track implementation progress"
-- `close` → "Run /figloops:next to close the round and write the changelog"
+- `capture` → "Run /figloops:go to capture screenshots"
+- `push` → "Run /figloops:go to push captures to Figma"
+- `await-comments` → "Run /figloops:go when users respond"
+- `pull` → "Run /figloops:go to fetch comments"
+- `comment-review` → "Run /figloops:go to advance after reviewing comments"
+- `cluster` → "Run /figloops:go to cluster comments by theme"
+- `plan-ack` → "Run /figloops:go to render the plan in Figma and review thread states"
+- `close` → "Run /figloops:go to close the round and write the changelog"
 
 **If `feedback/state.json` does not exist**, print this instead (banner included — this is the welcome screen for users who haven't initialized yet):
 
@@ -62,6 +62,7 @@ COMMANDS
   :feedback  Show all user feedback to date
   :themes    Show all clustered themes to date
   :summary   One-table rollup of all rounds to date
+  :discover  Auto-detect modal/panel/menu/tab scenarios
   :uninstall Remove all local figloops files (Figma file untouched)
   :whatsnew  Show release notes + check for available upgrade
   :help      This screen

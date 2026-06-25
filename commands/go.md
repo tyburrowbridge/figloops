@@ -18,12 +18,11 @@ description: Run the current phase; stop at the next gate
 
    | `currentPhase` | Skill to invoke |
    |---|---|
-   | `capture` | `figloops-next-capture` |
-   | `push` | `figloops-next-push` |
-   | `await-comments` | `figloops-next-await` |
-   | `pull` | `figloops-next-pull` |
-   | `comment-review` | `figloops-next-review` |
-   | `cluster` | `figloops-next-cluster` |
-   | `plan-approval` | `figloops-next-plan` |
-   | `implement` | `figloops-next-implement` |
-   | `close` | `figloops-next-close` |
+   | `capture` | `figloops-go-capture` |
+   | `push` | `figloops-go-push` |
+   | `await-comments` | `figloops-go-await` |
+   | `pull` | `figloops-go-pull` |
+   | `comment-review` | `figloops-go-review` |
+   | `cluster` | `figloops-go-cluster` |
+   | `plan-ack` | `figloops-go-plan-ack` |
+   | `close` | `figloops-go-close` |

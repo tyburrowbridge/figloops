@@ -1,5 +1,5 @@
 ---
-name: figloops-next-capture
+name: figloops-go-capture
 description: Capture phase — Playwright screenshots + preview gate
 user-invocable: false
 ---
@@ -62,7 +62,7 @@ TS exits non-zero → relay stderr verbatim, don't retry. State load fail → ab
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" push
    ```
-   Then invoke skill `figloops-next-push`.
+   Then invoke skill `figloops-go-push`.
 
 5. **On "Re-capture":** re-run step 2.
 

@@ -34,6 +34,7 @@ export const configSchema = z.object({
         path: z.string().regex(/^\//, "path must start with '/'"),
         setup: z.array(z.string().min(1)).optional(),
         waitFor: z.string().optional(),
+        kind: z.enum(['modal', 'panel', 'menu', 'tab']).optional(),
       }),
     )
     .optional(),

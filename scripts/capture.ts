@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
 import { createProgress, type ProgressReporter } from '../src/progress.js';
+import { waitForAnimations } from '../src/playwright-helpers.js';
 
 export interface CaptureRoute {
   label: string;
@@ -16,6 +17,7 @@ export interface CaptureScenario {
   path: string;
   setup?: string[];
   waitFor?: string;
+  kind?: 'modal' | 'panel' | 'menu' | 'tab';
 }
 
 export interface CaptureArgs {
@@ -117,6 +119,7 @@ async function processItem(
     if (item.waitFor) {
       await page.waitForSelector(item.waitFor, { timeout: 10_000 });
     }
+    await waitForAnimations(page);
     const luminance = skipLuminance ? null : await sampleLuminance(page);
     await page.screenshot({ path: out, fullPage: true, type: 'jpeg', quality: 85 });
     progress?.tick(item.label, true, performance.now() - start);

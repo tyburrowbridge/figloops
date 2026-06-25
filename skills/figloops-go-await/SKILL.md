@@ -1,5 +1,5 @@
 ---
-name: figloops-next-await
+name: figloops-go-await
 description: Await phase — gate until Figma comments arrive
 user-invocable: false
 ---
@@ -27,7 +27,7 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ---
    💬 **No comments yet for Round <round>.**
 
-   > ▶ **Re-run `/figloops:next`** once your reviewers have left feedback in Figma.
+   > ▶ **Re-run `/figloops:go`** once your reviewers have left feedback in Figma.
    ---
    ```
    Do not advance. Do not change task tracker state.
@@ -36,4 +36,4 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" pull
    ```
-   Invoke skill `figloops-next-pull`.
+   Invoke skill `figloops-go-pull`.

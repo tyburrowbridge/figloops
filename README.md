@@ -59,7 +59,7 @@ To pin to a specific release instead of tracking the default branch: `tyburrowbr
 |---|---|---|
 | 1 | `/figloops:init` | One-time setup — validates credentials, collects routes, writes config. |
 | 2 | *(start your app)* | Local (`npm run dev`) or any deployed URL. |
-| 3 | `/figloops:next` | Runs the current phase autonomously, stops at the next gate. |
+| 3 | `/figloops:go` | Runs the current phase autonomously, stops at the next gate. |
 
 Repeat step 3 after each gate until the round closes.
 
@@ -72,7 +72,7 @@ You'll mostly only use `:next`.
 | Command | What it does |
 |---|---|
 | `/figloops:init` | One-time project setup wizard. |
-| `/figloops:next` | Workhorse — runs the current phase, stops at the next gate. |
+| `/figloops:go` | Workhorse — runs the current phase, stops at the next gate. |
 | `/figloops:status` | Round tracker + Figma connection health check (PAT + MCP). |
 | `/figloops:feedback` | Show all user feedback to date, grouped by round and frame. |
 | `/figloops:themes` | Show all clustered themes to date, grouped by round. |
@@ -86,7 +86,7 @@ You'll mostly only use `:next`.
 
 ## What happens in a round
 
-`/figloops:next` walks 8 phases. You only have to act at the 4 gates (3 in terminal, 1 in Figma).
+`/figloops:go` walks 8 phases. You only have to act at the 4 gates (3 in terminal, 1 in Figma).
 
 | # | Phase | Gate |
 |---|---|---|

@@ -1,5 +1,5 @@
 ---
-name: figloops-next-cluster
+name: figloops-go-cluster
 description: Cluster phase — group comments into themes and draft plan
 user-invocable: false
 ---
@@ -41,4 +41,4 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" plan-ack
    ```
-   Invoke skill `figloops-next-plan-ack`.
+   Invoke skill `figloops-go-plan-ack`.

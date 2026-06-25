@@ -1,5 +1,5 @@
 ---
-name: figloops-next-review
+name: figloops-go-review
 description: Review phase — display comments by frame; gate on user decision
 user-invocable: false
 ---
@@ -55,7 +55,7 @@ TS exits non-zero → relay stderr verbatim, don't advance.
    ```bash
    "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/advance-phase.ts" cluster
    ```
-   Invoke skill `figloops-next-cluster`.
+   Invoke skill `figloops-go-cluster`.
 
 5. **On "Pull again":** re-run `pull-comments.ts`, re-render the comment list, ask again with the same 3 options.
 

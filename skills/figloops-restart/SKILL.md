@@ -63,22 +63,18 @@ State load fail → abort. TS exits non-zero → relay stderr verbatim.
    ```
    On "Cancel": print `"Nothing changed."` Stop.
 
-7. Delete captures folder:
+7. Delete the captures folder and reset state in one call:
    ```bash
-   rm -rf "feedback/round-<N>/captures"
+   "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/reset-round.ts"
    ```
+   This removes `feedback/round-<N>/captures`, resets the current round's state entry, and sets the phase back to `capture`. Returns `{ round, removed }`.
 
-8. Reset state via tsx:
-   ```bash
-   "<PLUGIN_DIR>/node_modules/.bin/tsx" -e "import('<PLUGIN_DIR>/src/state.js').then(({ loadState, writeState }) => { const s = loadState('feedback/state.json'); s.rounds[String(s.currentRound)] = { captures: [], pushManifest: null, comments: [], themes: [], plan: [] }; s.currentPhase = 'capture'; writeState('feedback/state.json', s); console.log('ok'); })"
-   ```
+8. Reset [FIGLOOPS] tasks: call `TaskList`. For each task whose subject starts with `[FIGLOOPS]` and status is `completed` or `in_progress`, call `TaskUpdate` to set status → `pending`. This re-arms the task list for the restarted round.
 
-9. Reset [FIGLOOPS] tasks: call `TaskList`. For each task whose subject starts with `[FIGLOOPS]` and status is `completed` or `in_progress`, call `TaskUpdate` to set status → `pending`. This re-arms the task list for the restarted round.
-
-10. Print:
+9. Print:
     ```
     ✓ Round N restarted to capture phase.
-    → Run /figloops:next to capture screenshots.
+    → Run /figloops:go to capture screenshots.
     ```
     If a push manifest existed, re-print the manual Figma page deletion reminder.
 

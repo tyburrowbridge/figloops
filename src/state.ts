@@ -117,7 +117,7 @@ export type Comment = z.infer<typeof commentSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type PlanItem = z.infer<typeof planItemSchema>;
 
-function emptyRound(): RoundData {
+export function emptyRound(): RoundData {
   return { captures: [], pushManifest: null, comments: [], themes: [], plan: [] };
 }
 

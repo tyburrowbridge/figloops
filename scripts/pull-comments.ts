@@ -19,7 +19,7 @@ async function main() {
   const round = currentRoundData(state);
 
   if (!round.pushManifest) {
-    process.stderr.write('No pushManifest in state for current round. Run /figloops:next through push first.\n');
+    process.stderr.write('No pushManifest in state for current round. Run /figloops:go through push first.\n');
     process.exit(1);
   }
   const allowedFrameIds = new Set(round.pushManifest.frames.map((f) => f.frameId));

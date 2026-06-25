@@ -1,5 +1,5 @@
 ---
-name: figloops-next-plan-ack
+name: figloops-go-plan-ack
 description: Plan-ack phase — render plan frame in Figma, anchor comment threads, refresh on subsequent runs
 user-invocable: false
 ---
@@ -50,7 +50,7 @@ TS exits non-zero → relay stderr verbatim, don't advance. MCP failure → prom
    - reply `/skip` to mark won't do
    - leave it open to discuss
 
-   When you're done (or want to check in), re-run `/figloops:next`.
+   When you're done (or want to check in), re-run `/figloops:go`.
    ```
 
    Exit. Do not advance.
@@ -88,4 +88,4 @@ TS exits non-zero → relay stderr verbatim, don't advance. MCP failure → prom
 
 10. **Advance check.** Count items by status from the new state.
     - If any item is `pending` → exit. Tell user to keep working in Figma.
-    - Else (all `shipped` / `wontdo` / `removed`) → mark task `completed`, run `advance-phase.ts close`, invoke skill `figloops-next-close`.
+    - Else (all `shipped` / `wontdo` / `removed`) → mark task `completed`, run `advance-phase.ts close`, invoke skill `figloops-go-close`.

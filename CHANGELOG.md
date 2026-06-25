@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.6.0 — 2026-06-24
+
+### Changed
+- **`/figloops:next` renamed to `/figloops:go`.** ⚠️ Breaking — the old command no longer exists. The 8 phase skills are renamed `figloops-next-*` → `figloops-go-*` to match. All in-tool prompts and docs updated.
+
+### Added
+- **`/figloops:discover`** — crawls the running app in a browser, clicks candidate triggers, and auto-detects modals, slide-over panels/drawers, dropdown menus/popovers, and tabs/accordions, emitting ready-to-use scenarios (stable trigger selector + `waitFor` on the revealed overlay). Presents candidates in a table to pick from; picked scenarios are merged into `figloops.config.json`. Also offered during `/figloops:init` (step 7e) as "Auto-detect" alongside manual entry. New scripts: `discover-scenarios.ts`, `merge-scenarios.ts`; shared `src/playwright-helpers.ts`. Scenario schema gains an optional `kind` (`modal`/`panel`/`menu`/`tab`).
+- Capture now waits for entrance animations/transitions to finish before screenshotting (`document.getAnimations()` settle, capped at 2s). Infinite/looping animations (spinners) are ignored so they don't stall the shot — no more mid-animation captures.
+
+### Fixed
+- Push frame labels now clear Figma's frame-name strip (added vertical gap) — the title above each frame no longer overlaps the gray frame name.
+- Push no longer advances on a silent commit failure: `upload-to-urls.ts` reports `commitFailed` and exits non-zero when an uploaded blob fails to finalize (was logged to stderr only, while the phase advanced with blank frames).
+- Capture sweeps the full page height before settling so scroll/intersection reveal animations fire and finish before the screenshot — previously `getAnimations()` only saw already-started animations and the fullPage scroll triggered reveals mid-shot. Finite animations with a null effect no longer burn the full 2s settle cap.
+- `hash-captures.ts` skips a file that vanishes/locks mid-run instead of aborting and losing every hash.
+
+### Internal
+- Push/restart phases route through tsx scripts instead of ad-hoc shell (`shasum`, `curl`, `date`, `cut`, `rm -rf`) — covered by the existing allowlisted tsx pattern, eliminating per-round permission prompts. New scripts: `hash-captures.ts`, `upload-to-urls.ts`, `timestamp.ts`, `reset-round.ts`. `emptyRound()` exported from `src/state.ts`.
+- `upload-to-urls.ts` uses a bounded worker pool (peak memory ≈ concurrency × largest file, not the sum of all captures) and derives Content-Type from the file extension itself, removing the MIME-mapping step from the push skill markdown.
+
 ## v1.5.0 — 2026-06-10
 
 ### Changed

@@ -24,6 +24,22 @@ beforeAll(async () => {
           <div id="modal" role="dialog" style="display:none;background:#9f9;padding:40px">Hello modal</div>
         </body></html>
       `);
+    } else if (req.url === '/animated') {
+      // Finite entrance animation — waitForAnimations should block until it ends.
+      res.end(`
+        <html><head><style>
+          @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+          #box { animation: fade 600ms ease forwards; background:#9cf; padding:40px }
+        </style></head><body><div id="box">Faded in</div></body></html>
+      `);
+    } else if (req.url === '/spinner') {
+      // Infinite loop — waitForAnimations should ignore it and not stall.
+      res.end(`
+        <html><head><style>
+          @keyframes spin { to { transform: rotate(360deg) } }
+          #s { animation: spin 600ms linear infinite; width:40px; height:40px; background:#f90 }
+        </style></head><body><div id="s"></div></body></html>
+      `);
     } else {
       res.writeHead(404);
       res.end('not found');
@@ -95,6 +111,49 @@ describe('capture (integration)', () => {
       expect(result.captures[1].filename).toBe('02-sign-up-modal.jpg');
       expect(statSync(result.captures[1].path).size).toBeGreaterThan(0);
       expect(result.failed).toHaveLength(0);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('waits for a finite entrance animation to finish before capturing', async () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'fb-cap-'));
+    try {
+      const start = performance.now();
+      const result = await capture({
+        outputDir: outDir,
+        viewport: { width: 800, height: 600 },
+        baseUrl: `http://localhost:${port}`,
+        waitFor: 'load',
+        routes: [{ label: 'Animated', path: '/animated' }],
+      });
+      const elapsed = performance.now() - start;
+
+      expect(result.captures).toHaveLength(1);
+      // The 600ms animation must have been awaited (well under the 2s cap).
+      expect(elapsed).toBeGreaterThan(500);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('does not stall on an infinite (looping) animation', async () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'fb-cap-'));
+    try {
+      const start = performance.now();
+      const result = await capture({
+        outputDir: outDir,
+        viewport: { width: 800, height: 600 },
+        baseUrl: `http://localhost:${port}`,
+        waitFor: 'load',
+        routes: [{ label: 'Spinner', path: '/spinner' }],
+      });
+      const elapsed = performance.now() - start;
+
+      expect(result.captures).toHaveLength(1);
+      // Looping animation is ignored — capture must not wait the full 2s cap.
+      // (Blocked would be ≥2000ms; bound leaves headroom for CI CPU contention.)
+      expect(elapsed).toBeLessThan(1800);
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

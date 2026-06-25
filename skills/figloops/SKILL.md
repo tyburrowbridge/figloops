@@ -9,14 +9,14 @@ This skill is a fallback dispatch hub. Command files invoke phase-specific skill
 | Phase / Command | Skill |
 |---|---|
 | `init` | `figloops-init` |
-| `capture` | `figloops-next-capture` |
-| `push` | `figloops-next-push` |
-| `await-comments` | `figloops-next-await` |
-| `pull` | `figloops-next-pull` |
-| `comment-review` | `figloops-next-review` |
-| `cluster` | `figloops-next-cluster` |
-| `plan-ack` | `figloops-next-plan-ack` |
-| `close` | `figloops-next-close` |
+| `capture` | `figloops-go-capture` |
+| `push` | `figloops-go-push` |
+| `await-comments` | `figloops-go-await` |
+| `pull` | `figloops-go-pull` |
+| `comment-review` | `figloops-go-review` |
+| `cluster` | `figloops-go-cluster` |
+| `plan-ack` | `figloops-go-plan-ack` |
+| `close` | `figloops-go-close` |
 | `status` | Read `feedback/state.json`, print `Round <N> · phase: <phase>`, list `[FIGLOOPS]` tasks via TaskList. |
 | `restart` | `figloops-restart` |
 | `summary` | `figloops-summary` |

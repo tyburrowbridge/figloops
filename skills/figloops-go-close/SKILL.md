@@ -1,5 +1,5 @@
 ---
-name: figloops-next-close
+name: figloops-go-close
 description: Close phase — write changelog and start next round
 user-invocable: false
 ---
@@ -91,6 +91,6 @@ TS exits non-zero → relay stderr verbatim. MCP fail → relay error + partial 
     ---
     🏁 **Round <round> complete!**
 
-    > ▶ **Run `/figloops:next`** to capture screenshots and begin Round <round+1>.
+    > ▶ **Run `/figloops:go`** to capture screenshots and begin Round <round+1>.
     ---
     ```

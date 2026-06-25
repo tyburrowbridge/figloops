@@ -61,12 +61,12 @@ Auth probe:
 question: "An in-progress round already exists. What do you want to do?"
 header: "Existing round"
 options:
-  - label: "Resume — exit init, just run /figloops:next"
+  - label: "Resume — exit init, just run /figloops:go"
   - label: "Archive — rename state.json to a backup and start fresh"
   - label: "Purge — delete all figloops files and start fresh"
   - label: "Cancel — don't change anything"
 ```
-- Resume: read `currentRound` and `currentPhase` from the file. Print `"Round <N> phase <phase> is in progress. Run /figloops:next to continue."` Abort.
+- Resume: read `currentRound` and `currentPhase` from the file. Print `"Round <N> phase <phase> is in progress. Run /figloops:go to continue."` Abort.
 - Archive: rename to `feedback/state.<YYYYMMDD-HHMMSS>.json.bak` (use `date '+%Y%m%d-%H%M%S'`). Tell user the backup path. Continue.
 - Purge: run `"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/uninstall.ts"`. Relay stdout. This hard-deletes `feedback/`, `figloops.config.json`, all `figloops.config.*.json.bak`, and strips `FIGMA_TOKEN`/`FIGLOOPS_PLUGIN_DIR` from `.env` (deletes `.env` if empty after). Figma file untouched. Then continue with this wizard from Step 3 — skip Step 2b entirely (config is gone).
 - Cancel: print `"Cancelled. Existing round preserved."` Abort.
@@ -282,7 +282,7 @@ echo '<PAYLOAD_JSON>' | "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scrip
 Payload = `{ "baseUrl": "<URL>", "routes": [{"label": "...", "path": "..."}, ...] }`. Parse stdout: `{ serverReachable, entryLinks, routes: [{label, path, status, reachable, linkedFromEntry, finalUrl?, error?}] }`.
 
 - `serverReachable === false`: print can't reach URL, continue with unannotated list.
-- `serverReachable === true`: re-render. Add "Issue" column only if ≥1 route failed (leave cell blank for healthy rows). For SPAs, if `entryLinks` is empty note it once: `"Note: / returned no <a href> links (typical for SPAs)."` For redirects, append `→ <finalUrl>`. Note once: `"figloops captures top-level routes. Modal/drawer-style overlays aren't detected — add them manually if needed."`
+- `serverReachable === true`: re-render. Add "Issue" column only if ≥1 route failed (leave cell blank for healthy rows). For SPAs, if `entryLinks` is empty note it once: `"Note: / returned no <a href> links (typical for SPAs)."` For redirects, append `→ <finalUrl>`. Note once: `"figloops captures top-level routes. Interactive states (modals, drawers, menus, tabs) are added as scenarios in the next step."`
 
 **Route list options:**
 ```
@@ -300,27 +300,26 @@ options:
 
 Require ≥1 route before continuing.
 
-**7e. Scenarios (optional).**
-
-Check `package.json` for known UI libraries:
-
-| Category | Packages |
-|---|---|
-| Modal/dialog | `react-modal`, `@radix-ui/react-dialog`, `@headlessui/react`, `vaul`, `@mantine/core`, `@mui/material`, `@chakra-ui/react`, `react-bootstrap`, `react-aria-components` |
-| Toast/notification | `sonner`, `react-hot-toast`, `react-toastify`, `@radix-ui/react-toast`, `notistack` |
-| Theme/dark mode | `next-themes`, `theme-ui` |
-
-Print detected libraries (or `"No common UI-state libraries detected."`).
+**7e. Scenarios (optional).** Scenarios capture interactive states — modals, drawers, dropdowns, tabs — beyond top-level routes.
 
 ```
-question: "Add scenarios beyond top-level routes? (modals, dark mode, empty/error states, etc.)"
+question: "How do you want to add interactive scenarios (modals, panels, menus, tabs)?"
 header: "Scenarios"
 options:
-  - label: "Yes — add some now"
-  - label: "Skip — I'll add them later"
+  - label: "Auto-detect — crawl the running app  (Recommended)"
+  - label: "Enter manually"
+  - label: "Skip — add later"
 ```
+**Drop the "Auto-detect" option if the dev server was NOT reachable in the 7d probe** (the crawler needs the running app).
 
-If "Yes", prompt as plain text:
+**On "Auto-detect":** build the payload from the in-progress route list and run the crawler:
+```bash
+echo '{"baseUrl":"<URL>","viewport":{"width":<w>,"height":<h>},"waitFor":"<waitFor>","routes":[{"label":"...","path":"..."}, …]}' \
+  | "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/discover-scenarios.ts"
+```
+Parse stdout `{ candidates: [{label, path, setup, waitFor, kind, confidence, triggerText}], skipped }`. Render a table `# | Kind | Label | Path | Trigger | Confidence` (`Trigger` = `setup[0]`), then ask `Add all / Pick some / Skip`. Picked candidates become scenarios `{label, path, setup, waitFor, kind}` (drop `confidence`/`triggerText`), held for the config written in Step 8. If `candidates` is empty, say so and fall through to **Enter manually** or **Skip**.
+
+**On "Enter manually"**, prompt as plain text:
 ```
 Enter one scenario per line:  <label> | <path> | <selector1>; <selector2>; ...
 
@@ -429,6 +428,6 @@ Print as final output (after all tool calls, so it renders below the task list):
 ---
 🎉 **You're all set!**
 
-> ▶ **Run `/figloops:next`** to capture your first screenshots and kick off Round 1.
+> ▶ **Run `/figloops:go`** to capture your first screenshots and kick off Round 1.
 ---
 ```
