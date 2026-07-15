@@ -13,6 +13,12 @@ Tables for 2+ comparable fields (escape `|` → `\|`, newlines → spaces in cel
 ## Errors
 TS exits non-zero → relay stderr verbatim, don't retry. State load fail → abort + tell user to restore backup and re-run `/figloops:init`.
 
+Auth-gated pages: if captures show a sign-in/SSO screen instead of the real page, the target is behind auth. Add `"auth": { "storageState": "feedback/.auth/storageState.json" }` to `figloops.config.json`, gitignore that path, then run the login helper (opens a headed browser; user signs in, presses Enter to save the session):
+```bash
+"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/auth-login.ts"
+```
+Re-run it when capture starts hitting sign-in pages again (session expired). Capture errors with a message pointing here when `auth.storageState` is set but the session file is missing.
+
 ---
 
 ## Handler

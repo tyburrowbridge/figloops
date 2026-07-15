@@ -1,6 +1,7 @@
 import { chromium, type Browser, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveStorageState } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
 import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
 import { createProgress, type ProgressReporter } from '../src/progress.js';
@@ -28,6 +29,8 @@ export interface CaptureArgs {
   routes: CaptureRoute[];
   scenarios?: CaptureScenario[];
   cachedTheme?: UiTheme;
+  // Absolute path to a Playwright storageState file for authenticated capture.
+  storageState?: string;
 }
 
 export interface CaptureResult {
@@ -107,7 +110,10 @@ async function processItem(
   const filename = `${String(index + 1).padStart(2, '0')}-${slug(item.label)}.jpg`;
   const out = join(args.outputDir, filename);
   const start = performance.now();
-  const ctx = await browser.newContext({ viewport: args.viewport });
+  const ctx = await browser.newContext({
+    viewport: args.viewport,
+    ...(args.storageState ? { storageState: args.storageState } : {}),
+  });
   try {
     const page = await ctx.newPage();
     await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
@@ -218,6 +224,7 @@ async function main() {
       waitFor: s.waitFor,
     })),
     cachedTheme: state.uiTheme,
+    storageState: resolveStorageState(cwd, config.auth?.storageState),
   });
 
   // Persist into state.json for the current round.

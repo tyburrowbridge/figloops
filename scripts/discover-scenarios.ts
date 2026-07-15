@@ -24,6 +24,8 @@ export interface DiscoverArgs {
   waitFor: 'networkidle' | 'load' | 'domcontentloaded';
   routes: DiscoverRoute[];
   maxCandidatesPerRoute?: number;
+  // Absolute path to a Playwright storageState file for authenticated discovery.
+  storageState?: string;
 }
 
 export type ScenarioKind = 'modal' | 'panel' | 'menu' | 'tab';
@@ -183,7 +185,10 @@ async function processRoute(
   const url = new URL(route.path, args.baseUrl).toString();
   const targetPath = new URL(url).pathname;
   const max = args.maxCandidatesPerRoute ?? DEFAULT_MAX_CANDIDATES;
-  const ctx = await browser.newContext({ viewport: args.viewport });
+  const ctx = await browser.newContext({
+    viewport: args.viewport,
+    ...(args.storageState ? { storageState: args.storageState } : {}),
+  });
   const found: ScenarioCandidate[] = [];
   const seenOverlay = new Set<string>();
   const start = performance.now();
@@ -288,6 +293,9 @@ export async function discover(args: DiscoverArgs): Promise<DiscoverResult> {
 
 async function main() {
   const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { loadConfig } = await import('../src/config.js');
+  const { resolveStorageState } = await import('../src/auth.js');
   let payload: DiscoverArgs;
   try {
     payload = JSON.parse(readFileSync(0, 'utf8'));
@@ -297,6 +305,11 @@ async function main() {
   if (!payload.baseUrl || !payload.viewport || !Array.isArray(payload.routes)) {
     throw new Error('stdin must be { baseUrl, viewport, waitFor, routes: [{label, path}] }');
   }
+  // Auth comes from the consuming repo's config (not stdin) so discovery reaches
+  // the same SSO/SAML-gated pages as capture.
+  const cwd = process.cwd();
+  const config = loadConfig(join(cwd, 'figloops.config.json'));
+  payload.storageState = resolveStorageState(cwd, config.auth?.storageState);
   const result = await discover(payload);
   process.stdout.write(JSON.stringify(result, null, 2));
 }

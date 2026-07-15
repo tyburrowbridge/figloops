@@ -18,6 +18,14 @@ export const configSchema = z.object({
     fileKey: z.string().min(1),
     changelogPageName: z.string().min(1),
   }),
+  auth: z
+    .object({
+      // Path (relative to the consuming repo) to a Playwright storageState
+      // JSON file holding session cookies. Generate it with auth-login.ts.
+      // Reused by capture + scenario discovery to reach SSO/SAML-gated pages.
+      storageState: z.string().min(1),
+    })
+    .optional(),
   routes: z
     .array(
       z.object({
