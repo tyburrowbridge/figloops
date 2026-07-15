@@ -105,9 +105,31 @@ You'll mostly only use `:next`.
 
 - `figloops.config.json` — routes, viewport, Figma file key
 - `.env` — `FIGMA_TOKEN` + `FIGLOOPS_PLUGIN_DIR`
+- `feedback/.auth/storageState.json` — saved browser session for auth-gated pages (**gitignore this — it holds live cookies**)
 - `feedback/state.json` — source of truth for all round data
 - `feedback/round-N/captures/*.png` — screenshots
 - `feedback/round-N/snapshot.md` — auto-generated audit of the round. **Don't edit — it's regenerated on every `:next`.**
+
+---
+
+## Auth-gated pages (SSO / SAML / login)
+
+If capture screenshots show a sign-in page instead of the real UI, the target is behind auth. Playwright captures in a fresh browser with no session cookies — VPN alone isn't enough.
+
+1. Add an `auth` block to `figloops.config.json`:
+   ```json
+   "auth": { "storageState": "feedback/.auth/storageState.json" }
+   ```
+2. Gitignore that path (it holds live session cookies):
+   ```
+   feedback/.auth/
+   ```
+3. Run the login helper — a headed browser opens; sign in until you see the real page, then press Enter:
+   ```bash
+   "$FIGLOOPS_PLUGIN_DIR/node_modules/.bin/tsx" "$FIGLOOPS_PLUGIN_DIR/scripts/auth-login.ts"
+   ```
+
+Capture and scenario discovery reuse the saved session. Re-run the helper when captures start hitting sign-in pages again (session expired).
 
 ---
 
