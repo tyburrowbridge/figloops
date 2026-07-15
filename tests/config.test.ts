@@ -96,6 +96,30 @@ describe('configSchema', () => {
     data.scenarios = [{ label: 'X', path: '/', setup: [''] }];
     expect(configSchema.safeParse(data).success).toBe(false);
   });
+
+  it('accepts mixed setup steps (string click + fill/press/select objects)', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [
+      {
+        label: 'Search results',
+        path: '/logs',
+        setup: [
+          { action: 'fill', selector: '#q', value: 'VP-BGT' },
+          { action: 'press', selector: '#q', key: 'Enter' },
+          { action: 'select', selector: '#type', value: 'AES' },
+          '#search-btn',
+        ],
+        waitFor: 'table tbody tr',
+      },
+    ];
+    expect(configSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('rejects a fill step missing its value', () => {
+    const data = readFixture('valid-config.json');
+    data.scenarios = [{ label: 'X', path: '/', setup: [{ action: 'fill', selector: '#q' }] }];
+    expect(configSchema.safeParse(data).success).toBe(false);
+  });
 });
 
 describe('loadConfig', () => {

@@ -114,9 +114,36 @@ You'll mostly only use `:next`.
 
 ## Auth-gated pages (SSO / SAML / login)
 
-If capture screenshots show a sign-in page instead of the real UI, the target is behind auth. Playwright captures in a fresh browser with no session cookies — VPN alone isn't enough.
+If capture screenshots show a sign-in page instead of the real UI, the target is behind auth. Playwright captures in a fresh browser with no session cookies — VPN alone isn't enough. Two ways to give it your session (set one under `auth` in `figloops.config.json`; if both are set, `cdpEndpoint` wins).
 
-1. Add an `auth` block to `figloops.config.json`:
+### Option A — attach to your Chrome (CDP)
+
+Best when the session is hard to reproduce (VPN + SSO). Capture attaches to a Chrome you're already logged into and screenshots through the live session — nothing to refresh.
+
+1. Point figloops at the debug port:
+   ```json
+   "auth": { "cdpEndpoint": "http://localhost:9222" }
+   ```
+2. Quit Chrome (its profile locks the debug port), then run the launcher — it opens your real Chrome with the port + profile and navigates to your app:
+   ```bash
+   "$FIGLOOPS_PLUGIN_DIR/node_modules/.bin/tsx" "$FIGLOOPS_PLUGIN_DIR/scripts/auth-cdp.ts"
+   ```
+3. In that Chrome: VPN on, signed in to the target. Leave the window open.
+
+Then capture — figloops attaches to that Chrome and never closes it. Re-run the launcher after you've quit Chrome; if it's already up on the port, the launcher just says you're ready.
+
+Prefer the raw command? It's equivalent to what the launcher runs:
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/Library/Application Support/Google/Chrome"
+```
+
+### Option B — saved session file (storageState)
+
+No flags to remember; session expires and must be refreshed.
+
+1. Config:
    ```json
    "auth": { "storageState": "feedback/.auth/storageState.json" }
    ```

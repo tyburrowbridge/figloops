@@ -73,7 +73,7 @@
     },
     "scenarios": {
       "type": "array",
-      "description": "Optional interaction-driven captures (modals, drawers, toasts, themed variants) that aren't reachable by URL alone. Each scenario navigates to `path`, runs each selector in `setup` as a click, then captures.",
+      "description": "Optional interaction-driven captures (modals, drawers, toasts, results/search states, themed variants) that aren't reachable by URL alone. Each scenario navigates to `path`, runs each `setup` step in order, then captures.",
       "items": {
         "type": "object",
         "required": ["label", "path"],
@@ -86,16 +86,59 @@
           "path": {
             "type": "string",
             "pattern": "^/",
-            "description": "Path to navigate to before running setup clicks."
+            "description": "Path to navigate to before running setup steps."
           },
           "setup": {
             "type": "array",
-            "description": "CSS selectors to click in order before capture. Each click auto-waits up to 30s for the selector to be actionable.",
-            "items": { "type": "string", "minLength": 1 }
+            "description": "Steps run in order before capture. A bare string is a click; object forms drive inputs (fill/press/select) — e.g. type a value then click Search to reach a results state. Each step auto-waits up to 10s for the selector to be actionable.",
+            "items": {
+              "oneOf": [
+                { "type": "string", "minLength": 1, "description": "Selector to click (shorthand)." },
+                {
+                  "type": "object",
+                  "required": ["action", "selector"],
+                  "properties": {
+                    "action": { "const": "click" },
+                    "selector": { "type": "string", "minLength": 1 }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["action", "selector", "value"],
+                  "properties": {
+                    "action": { "const": "fill" },
+                    "selector": { "type": "string", "minLength": 1 },
+                    "value": { "type": "string", "description": "Text to type into the input." }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["action", "selector", "key"],
+                  "properties": {
+                    "action": { "const": "press" },
+                    "selector": { "type": "string", "minLength": 1 },
+                    "key": { "type": "string", "minLength": 1, "description": "Key to press, e.g. 'Enter'." }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["action", "selector", "value"],
+                  "properties": {
+                    "action": { "const": "select" },
+                    "selector": { "type": "string", "minLength": 1 },
+                    "value": { "type": "string", "description": "Option value to select." }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
           },
           "waitFor": {
             "type": "string",
-            "description": "Optional CSS selector to wait for after setup clicks, before capturing."
+            "description": "Optional CSS selector to wait for after setup steps, before capturing. For results/search states, use a selector that only exists once results render."
           }
         }
       }
