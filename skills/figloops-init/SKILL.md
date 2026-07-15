@@ -421,13 +421,22 @@ Call `TaskCreate` 8 times in a single message (all `pending`):
 - `[FIGLOOPS] Ack plan in Figma`
 - `[FIGLOOPS] Close round`
 
-### Step 12 — Ready summary
+### Step 12 — Ready summary + auto-start
 
 Print as final output (after all tool calls, so it renders below the task list):
 ```
 ---
 🎉 **You're all set!**
-
-> ▶ **Run `/figloops:go`** to capture your first screenshots and kick off Round 1.
 ---
 ```
+
+Then decide whether to start Round 1 automatically. The app must be reachable for capture to work, so only auto-run when we already know it is:
+
+- **Auto-run condition** — ANY of:
+  - The app URL is deployed (not `localhost` / `127.0.0.1`), OR
+  - The route probe in Step 7d ran and returned `serverReachable === true`.
+- **When the auto-run condition holds:** print `> ▶ Starting Round 1 — capturing screenshots…` and immediately invoke skill `figloops-go-capture`. Do not stop for confirmation; the capture phase has its own preview gate.
+- **When it does NOT hold** (localhost and probe was skipped or unreachable): do NOT auto-run — the dev server is probably not up. Print instead:
+  ```
+  > ▶ Start your app, then run **`/figloops:go`** to capture your first screenshots and kick off Round 1.
+  ```

@@ -57,11 +57,11 @@ To pin to a specific release instead of tracking the default branch: `tyburrowbr
 
 | Step | Command | What it does |
 |---|---|---|
-| 1 | `/figloops:init` | One-time setup — validates credentials, collects routes, writes config. |
-| 2 | *(start your app)* | Local (`npm run dev`) or any deployed URL. |
+| 1 | *(start your app)* | Local (`npm run dev`) or any deployed URL. |
+| 2 | `/figloops:init` | One-time setup — validates credentials, collects routes, writes config. Auto-starts Round 1 capture when your app is reachable. |
 | 3 | `/figloops:go` | Runs the current phase autonomously, stops at the next gate. |
 
-Repeat step 3 after each gate until the round closes.
+If the app is running when `/figloops:init` finishes (deployed URL, or a successful route probe), it kicks off Round 1 capture for you — no need to run `/figloops:go` for the first phase. Otherwise start your app and run `/figloops:go`. Repeat step 3 after each gate until the round closes.
 
 ---
 
