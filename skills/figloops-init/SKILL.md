@@ -321,15 +321,29 @@ Parse stdout `{ candidates: [{label, path, setup, waitFor, kind, confidence, tri
 
 **On "Enter manually"**, prompt as plain text:
 ```
-Enter one scenario per line:  <label> | <path> | <selector1>; <selector2>; ...
+Enter one scenario per line:  <label> | <path> | <step>; <step>; ...
 
 - label: short name for the Figma frame (e.g. "Sign up modal")
 - path: URL to navigate to first (e.g. "/")
-- selectors: optional, semicolon-separated CSS selectors to click in order before capture
+- steps: optional, semicolon-separated actions run in order before capture. Each step is one of:
+    <selector>                 → click it (shorthand)
+    fill <selector> = <value>  → type <value> into an input
+    press <selector> = <key>   → press a key (e.g. Enter) in an element
+    select <selector> = <value>→ choose an <option> in a <select>
+
+Examples:
+  Sign up modal | / | #open-signup
+  Search results | /logs | fill input[placeholder*="Enter value"] = VP-BGT; #search-btn
 
 Blank line to finish.
 ```
-Parse each line: split on `|` (trim). Required: `label`, `path` (must start with `/`). Optional `setup`: split on `;`, trim, reject empty strings. Reject invalid lines, surface errors, re-prompt.
+Parse each line: split on `|` (trim). Required: `label`, `path` (must start with `/`). Optional `setup`: split on `;`, trim, drop empties, then convert each step to config form:
+- `fill <sel> = <val>` → `{ "action": "fill", "selector": "<sel>", "value": "<val>" }`
+- `press <sel> = <key>` → `{ "action": "press", "selector": "<sel>", "key": "<key>" }`
+- `select <sel> = <val>` → `{ "action": "select", "selector": "<sel>", "value": "<val>" }`
+- anything else → the bare selector string (click)
+
+For a **results / search state**, also set `waitFor` to a selector that only exists once results render (e.g. the results table/row), so capture waits for the loaded state. Ask the user for it if a fill/press step is present and no `waitFor` was given. Reject invalid lines, surface errors, re-prompt.
 
 Show parsed list and confirm:
 ```

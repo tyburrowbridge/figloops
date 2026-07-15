@@ -9,9 +9,9 @@
 // Mirrors scripts/probe-routes.ts (stdin payload + exported fn + main guard) and
 // scripts/capture.ts (Playwright + createProgress). Detection runs in the page
 // via string predicates so TypeScript doesn't type-check browser globals.
-import { chromium, type Browser } from 'playwright';
 import { waitForAnimations, UNIQUE_SELECTOR_FN } from '../src/playwright-helpers.js';
 import { createProgress, type ProgressReporter } from '../src/progress.js';
+import { acquireBrowser, type BrowserSession } from '../src/browser.js';
 
 export interface DiscoverRoute {
   label: string;
@@ -26,6 +26,8 @@ export interface DiscoverArgs {
   maxCandidatesPerRoute?: number;
   // Absolute path to a Playwright storageState file for authenticated discovery.
   storageState?: string;
+  // CDP endpoint to attach to an already-authenticated Chrome (takes precedence).
+  cdpEndpoint?: string;
 }
 
 export type ScenarioKind = 'modal' | 'panel' | 'menu' | 'tab';
@@ -177,7 +179,7 @@ function buildDetectExpr(triggerSelector: string): string {
 }
 
 async function processRoute(
-  browser: Browser,
+  session: BrowserSession,
   args: DiscoverArgs,
   route: DiscoverRoute,
   progress: ProgressReporter | null,
@@ -185,22 +187,18 @@ async function processRoute(
   const url = new URL(route.path, args.baseUrl).toString();
   const targetPath = new URL(url).pathname;
   const max = args.maxCandidatesPerRoute ?? DEFAULT_MAX_CANDIDATES;
-  const ctx = await browser.newContext({
-    viewport: args.viewport,
-    ...(args.storageState ? { storageState: args.storageState } : {}),
-  });
+  const { page, release } = await session.createPage(args.viewport);
   const found: ScenarioCandidate[] = [];
   const seenOverlay = new Set<string>();
   const start = performance.now();
 
-  const prime = async (page: import('playwright').Page) => {
-    await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
-    await waitForAnimations(page);
-    await page.evaluate(BASELINE_EXPR);
+  const prime = async (p: import('playwright').Page) => {
+    await p.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
+    await waitForAnimations(p);
+    await p.evaluate(BASELINE_EXPR);
   };
 
   try {
-    const page = await ctx.newPage();
     await prime(page);
     const triggers = (await page.evaluate(buildCollectExpr(max))) as Trigger[];
 
@@ -252,12 +250,15 @@ async function processRoute(
     progress?.tick(route.label, false, performance.now() - start, error);
     return { candidates: found, skipped: { path: route.path, error } };
   } finally {
-    await ctx.close();
+    await release();
   }
 }
 
 export async function discover(args: DiscoverArgs): Promise<DiscoverResult> {
-  const browser = await chromium.launch();
+  const session = await acquireBrowser({
+    cdpEndpoint: args.cdpEndpoint,
+    storageState: args.storageState,
+  });
   try {
     const progress = args.routes.length > 0 ? createProgress(args.routes.length, 'discover') : null;
     const candidates: ScenarioCandidate[] = [];
@@ -268,7 +269,7 @@ export async function discover(args: DiscoverArgs): Promise<DiscoverResult> {
     const workers = Array.from({ length: pool }, async () => {
       while (next < args.routes.length) {
         const route = args.routes[next++];
-        const res = await processRoute(browser, args, route, progress);
+        const res = await processRoute(session, args, route, progress);
         candidates.push(...res.candidates);
         if (res.skipped) skipped.push(res.skipped);
       }
@@ -287,7 +288,7 @@ export async function discover(args: DiscoverArgs): Promise<DiscoverResult> {
 
     return { baseUrl: args.baseUrl, candidates, skipped };
   } finally {
-    await browser.close();
+    await session.dispose();
   }
 }
 
@@ -309,7 +310,12 @@ async function main() {
   // the same SSO/SAML-gated pages as capture.
   const cwd = process.cwd();
   const config = loadConfig(join(cwd, 'figloops.config.json'));
-  payload.storageState = resolveStorageState(cwd, config.auth?.storageState);
+  payload.cdpEndpoint = config.auth?.cdpEndpoint;
+  // cdpEndpoint wins — skip storageState resolution (errors if the file is
+  // missing) when attaching to a live browser.
+  payload.storageState = config.auth?.cdpEndpoint
+    ? undefined
+    : resolveStorageState(cwd, config.auth?.storageState);
   const result = await discover(payload);
   process.stdout.write(JSON.stringify(result, null, 2));
 }

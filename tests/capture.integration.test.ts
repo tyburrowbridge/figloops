@@ -24,6 +24,16 @@ beforeAll(async () => {
           <div id="modal" role="dialog" style="display:none;background:#9f9;padding:40px">Hello modal</div>
         </body></html>
       `);
+    } else if (req.url === '/search') {
+      // Search form: results render only after typing a value and clicking
+      // Search — exercises fill + click setup steps for a results state.
+      res.end(`
+        <html><body>
+          <input id="q" placeholder="Enter value and press Search..." />
+          <button id="go" onclick="document.getElementById('results').style.display = document.getElementById('q').value ? 'block' : 'none'">Search</button>
+          <div id="results" style="display:none;background:#efe;padding:20px">31 records</div>
+        </body></html>
+      `);
     } else if (req.url === '/animated') {
       // Finite entrance animation — waitForAnimations should block until it ends.
       res.end(`
@@ -111,6 +121,37 @@ describe('capture (integration)', () => {
       expect(result.captures[1].filename).toBe('02-sign-up-modal.jpg');
       expect(statSync(result.captures[1].path).size).toBeGreaterThan(0);
       expect(result.failed).toHaveLength(0);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('fills an input then clicks to capture a results state', async () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'fb-cap-'));
+    try {
+      const result = await capture({
+        outputDir: outDir,
+        viewport: { width: 800, height: 600 },
+        baseUrl: `http://localhost:${port}`,
+        waitFor: 'load',
+        routes: [{ label: 'Login', path: '/login' }],
+        scenarios: [
+          {
+            label: 'Search results',
+            path: '/search',
+            setup: [
+              { action: 'fill', selector: '#q', value: 'VP-BGT' },
+              { action: 'click', selector: '#go' },
+            ],
+            waitFor: '#results[style*="display:block"], #results[style*="display: block"]',
+          },
+        ],
+      });
+
+      expect(result.failed).toHaveLength(0);
+      expect(result.captures).toHaveLength(2);
+      expect(result.captures[1].filename).toBe('02-search-results.jpg');
+      expect(statSync(result.captures[1].path).size).toBeGreaterThan(0);
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

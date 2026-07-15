@@ -3,6 +3,20 @@
 import { z } from 'zod';
 import { readFileSync } from 'node:fs';
 
+// A scenario setup step. A bare string is shorthand for a click (backward
+// compatible with earlier configs + auto-discovered scenarios). Object forms
+// drive inputs so we can capture post-interaction states — e.g. type a value
+// then click Search to reach a results view.
+export const setupStepSchema = z.union([
+  z.string().min(1), // shorthand: click this selector
+  z.object({ action: z.literal('click'), selector: z.string().min(1) }),
+  z.object({ action: z.literal('fill'), selector: z.string().min(1), value: z.string() }),
+  z.object({ action: z.literal('press'), selector: z.string().min(1), key: z.string().min(1) }),
+  z.object({ action: z.literal('select'), selector: z.string().min(1), value: z.string() }),
+]);
+
+export type SetupStep = z.infer<typeof setupStepSchema>;
+
 export const configSchema = z.object({
   devServer: z.object({
     url: z.string().url(),
@@ -20,10 +34,17 @@ export const configSchema = z.object({
   }),
   auth: z
     .object({
-      // Path (relative to the consuming repo) to a Playwright storageState
-      // JSON file holding session cookies. Generate it with auth-login.ts.
-      // Reused by capture + scenario discovery to reach SSO/SAML-gated pages.
-      storageState: z.string().min(1),
+      // Reach SSO/SAML-gated pages. Two mutually exclusive strategies; if both
+      // are set, cdpEndpoint wins. Reused by capture + scenario discovery.
+      //
+      // cdpEndpoint: attach to a Chrome you started with --remote-debugging-port
+      //   (e.g. "http://localhost:9222"). Capture reuses that browser's live,
+      //   already-authenticated session — nothing to refresh.
+      // storageState: path (relative to the consuming repo) to a Playwright
+      //   storageState JSON file of session cookies. Generate it with
+      //   auth-login.ts; re-run when the session expires.
+      cdpEndpoint: z.string().url().optional(),
+      storageState: z.string().min(1).optional(),
     })
     .optional(),
   routes: z
@@ -40,7 +61,7 @@ export const configSchema = z.object({
       z.object({
         label: z.string().min(1),
         path: z.string().regex(/^\//, "path must start with '/'"),
-        setup: z.array(z.string().min(1)).optional(),
+        setup: z.array(setupStepSchema).optional(),
         waitFor: z.string().optional(),
         kind: z.enum(['modal', 'panel', 'menu', 'tab']).optional(),
       }),

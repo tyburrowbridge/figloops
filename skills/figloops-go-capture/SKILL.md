@@ -13,11 +13,17 @@ Tables for 2+ comparable fields (escape `|` → `\|`, newlines → spaces in cel
 ## Errors
 TS exits non-zero → relay stderr verbatim, don't retry. State load fail → abort + tell user to restore backup and re-run `/figloops:init`.
 
-Auth-gated pages: if captures show a sign-in/SSO screen instead of the real page, the target is behind auth. Add `"auth": { "storageState": "feedback/.auth/storageState.json" }` to `figloops.config.json`, gitignore that path, then run the login helper (opens a headed browser; user signs in, presses Enter to save the session):
-```bash
-"<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/auth-login.ts"
-```
-Re-run it when capture starts hitting sign-in pages again (session expired). Capture errors with a message pointing here when `auth.storageState` is set but the session file is missing.
+Auth-gated pages: if captures show a sign-in/SSO screen instead of the real page, the target is behind auth. Two options in `figloops.config.json` under `auth` (if both set, `cdpEndpoint` wins) — see README "Auth-gated pages":
+- **CDP attach** — `"auth": { "cdpEndpoint": "http://localhost:9222" }`. User quits Chrome, then runs the launcher (opens their real Chrome with the debug port + profile, navigates to the app); they ensure VPN on + signed in, leave it running:
+  ```bash
+  "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/auth-cdp.ts"
+  ```
+  Capture reuses that live session; figloops never closes their Chrome. Best for hard-to-reproduce VPN+SSO sessions. Capture errors with a connect hint if Chrome isn't listening.
+- **storageState** — `"auth": { "storageState": "feedback/.auth/storageState.json" }`. Gitignore that path, then run the login helper (headed browser; user signs in, presses Enter to save):
+  ```bash
+  "<PLUGIN_DIR>/node_modules/.bin/tsx" "<PLUGIN_DIR>/scripts/auth-login.ts"
+  ```
+  Re-run when capture hits sign-in pages again (session expired). Capture errors with a pointer here when `storageState` is set but the file is missing.
 
 ---
 

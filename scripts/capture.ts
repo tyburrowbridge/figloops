@@ -1,8 +1,9 @@
-import { chromium, type Browser, type Page } from 'playwright';
+import { type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveStorageState } from '../src/auth.js';
-import { loadConfig } from '../src/config.js';
+import { acquireBrowser, type BrowserSession } from '../src/browser.js';
+import { loadConfig, type SetupStep } from '../src/config.js';
 import { loadState, writeState, currentRoundData, type Capture as StateCapture, type UiTheme } from '../src/state.js';
 import { createProgress, type ProgressReporter } from '../src/progress.js';
 import { waitForAnimations } from '../src/playwright-helpers.js';
@@ -16,7 +17,7 @@ export interface CaptureRoute {
 export interface CaptureScenario {
   label: string;
   path: string;
-  setup?: string[];
+  setup?: SetupStep[];
   waitFor?: string;
   kind?: 'modal' | 'panel' | 'menu' | 'tab';
 }
@@ -31,6 +32,8 @@ export interface CaptureArgs {
   cachedTheme?: UiTheme;
   // Absolute path to a Playwright storageState file for authenticated capture.
   storageState?: string;
+  // CDP endpoint to attach to an already-authenticated Chrome (takes precedence).
+  cdpEndpoint?: string;
 }
 
 export interface CaptureResult {
@@ -43,7 +46,33 @@ interface CaptureItem {
   label: string;
   path: string;
   waitFor?: string;
-  setup?: string[];
+  setup?: SetupStep[];
+}
+
+// Run one scenario setup step. A bare string is a click; object forms drive
+// inputs (fill/press/select) so we can reach post-interaction states like a
+// search results view. Auto-waits for actionability; 10s is enough for any
+// post-navigation interaction, longer just stalls broken scenarios.
+async function runStep(page: Page, step: SetupStep): Promise<void> {
+  const opts = { timeout: 10_000 };
+  if (typeof step === 'string') {
+    await page.click(step, opts);
+    return;
+  }
+  switch (step.action) {
+    case 'click':
+      await page.click(step.selector, opts);
+      return;
+    case 'fill':
+      await page.fill(step.selector, step.value, opts);
+      return;
+    case 'press':
+      await page.press(step.selector, step.key, opts);
+      return;
+    case 'select':
+      await page.selectOption(step.selector, step.value, opts);
+      return;
+  }
 }
 
 interface WorkerSuccess {
@@ -99,7 +128,7 @@ async function sampleLuminance(page: Page): Promise<number | null> {
 }
 
 async function processItem(
-  browser: Browser,
+  session: BrowserSession,
   args: CaptureArgs,
   item: CaptureItem,
   index: number,
@@ -110,17 +139,11 @@ async function processItem(
   const filename = `${String(index + 1).padStart(2, '0')}-${slug(item.label)}.jpg`;
   const out = join(args.outputDir, filename);
   const start = performance.now();
-  const ctx = await browser.newContext({
-    viewport: args.viewport,
-    ...(args.storageState ? { storageState: args.storageState } : {}),
-  });
+  const { page, release } = await session.createPage(args.viewport);
   try {
-    const page = await ctx.newPage();
     await page.goto(url, { waitUntil: args.waitFor, timeout: 30_000 });
-    for (const sel of item.setup ?? []) {
-      // Auto-waits for the element to be actionable. 10s is enough for any
-      // post-navigation interaction; longer just stalls broken scenarios.
-      await page.click(sel, { timeout: 10_000 });
+    for (const step of item.setup ?? []) {
+      await runStep(page, step);
     }
     if (item.waitFor) {
       await page.waitForSelector(item.waitFor, { timeout: 10_000 });
@@ -135,13 +158,16 @@ async function processItem(
     progress?.tick(item.label, false, performance.now() - start, message);
     return { kind: 'err', index, label: item.label, error: message };
   } finally {
-    await ctx.close();
+    await release();
   }
 }
 
 export async function capture(args: CaptureArgs): Promise<CaptureResult> {
   mkdirSync(args.outputDir, { recursive: true });
-  const browser: Browser = await chromium.launch();
+  const session = await acquireBrowser({
+    cdpEndpoint: args.cdpEndpoint,
+    storageState: args.storageState,
+  });
   try {
     // Routes first, then scenarios — both produce numbered captures in one list.
     const items: CaptureItem[] = [
@@ -163,7 +189,7 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
           while (true) {
             const i = next++;
             if (i >= items.length) return;
-            const res = await processItem(browser, args, items[i], i, skipLuminance, progress);
+            const res = await processItem(session, args, items[i], i, skipLuminance, progress);
             results.set(i, res);
           }
         })(),
@@ -199,7 +225,7 @@ export async function capture(args: CaptureArgs): Promise<CaptureResult> {
 
     return { captures, failed, uiTheme };
   } finally {
-    await browser.close();
+    await session.dispose();
   }
 }
 
@@ -224,7 +250,12 @@ async function main() {
       waitFor: s.waitFor,
     })),
     cachedTheme: state.uiTheme,
-    storageState: resolveStorageState(cwd, config.auth?.storageState),
+    cdpEndpoint: config.auth?.cdpEndpoint,
+    // cdpEndpoint wins — skip storageState resolution (which errors if the file
+    // is missing) when attaching to a live browser.
+    storageState: config.auth?.cdpEndpoint
+      ? undefined
+      : resolveStorageState(cwd, config.auth?.storageState),
   });
 
   // Persist into state.json for the current round.
